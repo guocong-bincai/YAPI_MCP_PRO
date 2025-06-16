@@ -35,4 +35,4 @@ coverage
 # OS
 .DS_Store
 Thumbs.db 
-.yapi-cache
+.yapi-cache# 主要仓库已切换到GitLab
