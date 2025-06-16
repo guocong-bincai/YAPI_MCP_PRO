@@ -10,13 +10,37 @@ import type {
   GetProjectResponse,
   GetCategoryListResponse,
   SaveApiInterfaceParams,
-  SaveApiResponse
+  SaveApiResponse,
+  UserInfo,
+  GroupInfo,
+  ProjectMember,
+  ProjectEnv,
+  ProjectLog,
+  CreateProjectParams,
+  UpdateProjectParams,
+  GetProjectEnvsResponse,
+  CreateCategoryParams,
+  GetMockExpectationsResponse,
+  CreateMockExpectationParams,
+  GetTestCollectionsResponse,
+  CreateTestCollectionParams,
+  GetTestCasesResponse,
+  TestCase,
+  TestCollection,
+  MockExpectation,
+  GetUserInfoResponse,
+  GetGroupListResponse,
+  GetInterfaceRunHistoryResponse,
+  InterfaceRunHistory,
+  RunInterfaceParams,
+  CreateTestCaseParams
 } from "./types";
 
 export class YApiService {
   private readonly baseUrl: string;
   private readonly tokenMap: Map<string, string>;
   private readonly defaultToken: string;
+  private readonly cookie: string; // 新增：Cookie 支持
   private projectInfoCache: Map<string, ProjectInfo> = new Map(); // 缓存项目信息
   private categoryListCache: Map<string, CategoryInfo[]> = new Map(); // 缓存项目分类列表
   private readonly logger: Logger;
@@ -25,19 +49,28 @@ export class YApiService {
     this.baseUrl = baseUrl;
     this.tokenMap = new Map();
     this.defaultToken = "";
+    this.cookie = ""; // 初始化 cookie
     this.logger = new Logger('YApiService', logLevel);
     
-    // 解析token字符串，格式为: "projectId:token,projectId:token,..."
+    // 解析token字符串，格式为: "projectId:token,projectId:token,..." 或 Cookie 格式
     if (token) {
-      const tokenPairs = token.split(',');
-      for (const pair of tokenPairs) {
-        const [projectId, projectToken] = pair.trim().split(':');
-        if (projectId && projectToken) {
-          this.tokenMap.set(projectId, projectToken);
-        } else if (!projectId.includes(':')) {
-          // 如果没有冒号，则作为默认token
-          this.defaultToken = pair.trim();
+      // 检查是否是 Cookie 格式 (包含 _yapi_token)
+      if (token.includes('_yapi_token')) {
+        this.cookie = token;
+        this.logger.info('使用 Cookie 认证模式');
+      } else {
+        // 原有的 token 格式解析
+        const tokenPairs = token.split(',');
+        for (const pair of tokenPairs) {
+          const [projectId, projectToken] = pair.trim().split(':');
+          if (projectId && projectToken) {
+            this.tokenMap.set(projectId, projectToken);
+          } else if (!projectId.includes(':')) {
+            // 如果没有冒号，则作为默认token
+            this.defaultToken = pair.trim();
+          }
         }
+        this.logger.info('使用 Token 参数认证模式');
       }
     }
     
@@ -46,9 +79,123 @@ export class YApiService {
 
   /**
    * 获取已配置的项目ID列表
+   * 对于Cookie认证，返回空数组，让系统通过其他方式发现项目
    */
   getConfiguredProjectIds(): string[] {
+    if (this.cookie) {
+      // Cookie 认证模式下，返回空数组，项目将通过动态发现
+      return [];
+    }
     return Array.from(this.tokenMap.keys());
+  }
+
+  /**
+   * 检查是否使用Cookie认证
+   */
+  isCookieAuth(): boolean {
+    return !!this.cookie;
+  }
+
+  /**
+   * 获取用户信息（仅Cookie认证模式）
+   */
+  async getUserInfo(): Promise<any> {
+    if (!this.cookie) {
+      throw new Error('仅Cookie认证模式支持获取用户信息');
+    }
+    
+    try {
+      const response = await this.request<any>("/api/user/status");
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "获取用户信息失败");
+      }
+      return response.data;
+    } catch (error) {
+      this.logger.error('获取用户信息失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 获取用户的项目列表（仅Cookie认证模式）
+   */
+  async getUserProjects(): Promise<Array<{ _id: number; name: string }>> {
+    if (!this.cookie) {
+      throw new Error('仅Cookie认证模式支持获取用户项目列表');
+    }
+    
+    try {
+      // 首先获取用户信息
+      const userResponse = await this.request<any>("/api/user/status");
+      if (userResponse.errcode !== 0) {
+        throw new Error(userResponse.errmsg || "获取用户信息失败");
+      }
+      
+      this.logger.info(`当前用户ID: ${userResponse.data.uid}, 用户名: ${userResponse.data.username}`);
+      
+      // 方法1：尝试获取用户的组列表
+      try {
+        const groupListResponse = await this.request<any>("/api/group/list");
+        if (groupListResponse.errcode === 0 && groupListResponse.data && Array.isArray(groupListResponse.data)) {
+          const projects: Array<{ _id: number; name: string }> = [];
+          
+          for (const group of groupListResponse.data) {
+            this.logger.info(`发现组: ${group.group_name} (ID: ${group._id})`);
+            
+            // 获取该组下的项目列表
+            try {
+              const projectListResponse = await this.request<any>("/api/project/list", { group_id: group._id });
+              if (projectListResponse.errcode === 0 && projectListResponse.data && projectListResponse.data.list) {
+                for (const project of projectListResponse.data.list) {
+                  projects.push({
+                    _id: project._id,
+                    name: project.name
+                  });
+                  this.logger.info(`发现项目: ${project.name} (ID: ${project._id})`);
+                }
+              }
+            } catch (error) {
+              this.logger.debug(`获取组 ${group._id} 的项目列表失败:`, error);
+            }
+          }
+          
+          if (projects.length > 0) {
+            return projects;
+          }
+        }
+      } catch (error) {
+        this.logger.debug('方法1失败，尝试方法2');
+      }
+      
+      // 方法2：尝试使用配置的或固定的group_id
+      const configuredGroupId = process.env.YAPI_GROUP_ID;
+      const knownGroupIds = configuredGroupId ? [parseInt(configuredGroupId)] : [1557]; // 从用户的网络请求中看到的
+      const projects: Array<{ _id: number; name: string }> = [];
+      
+      for (const groupId of knownGroupIds) {
+        try {
+          this.logger.info(`尝试获取组 ${groupId} 的项目列表`);
+          const projectListResponse = await this.request<any>("/api/project/list", { group_id: groupId });
+          if (projectListResponse.errcode === 0 && projectListResponse.data && projectListResponse.data.list) {
+            for (const project of projectListResponse.data.list) {
+              projects.push({
+                _id: project._id,
+                name: project.name
+              });
+              this.logger.info(`发现项目: ${project.name} (ID: ${project._id})`);
+            }
+          }
+        } catch (error) {
+          this.logger.debug(`获取组 ${groupId} 的项目列表失败:`, error);
+        }
+      }
+      
+      return projects;
+    } catch (error) {
+      this.logger.error('获取用户项目列表失败:', error);
+      // 不抛出错误，返回空数组，让系统继续运行
+      return [];
+    }
   }
 
   /**
@@ -76,27 +223,58 @@ export class YApiService {
     try {
       this.logger.debug(`调用 ${this.baseUrl}${endpoint} 方法: ${method}`);
       
-      // 使用项目ID获取对应的token，如果没有提供项目ID则使用默认token
-      const token = projectId ? this.getToken(projectId) : this.defaultToken;
-      
-      if (!token) {
-        throw new Error(`未配置项目ID ${projectId} 的token`);
-      }
-      
       let response;
       
+      // 准备请求配置
+      const config: any = {};
+      
+      // 如果使用 Cookie 认证
+      if (this.cookie) {
+        config.headers = {
+          'Cookie': this.cookie
+        };
+        this.logger.debug('使用 Cookie 认证');
+      } else {
+        // 使用项目ID获取对应的token，如果没有提供项目ID则使用默认token
+        const token = projectId ? this.getToken(projectId) : this.defaultToken;
+        
+        if (!token) {
+          throw new Error(`未配置项目ID ${projectId} 的token`);
+        }
+        
+        this.logger.debug('使用 Token 参数认证');
+      }
+      
       if (method === 'GET') {
-        response = await axios.get(`${this.baseUrl}${endpoint}`, {
-          params: {
+        if (this.cookie) {
+          // Cookie 认证时，参数直接作为查询参数
+          response = await axios.get(`${this.baseUrl}${endpoint}`, {
+            params: params,
+            ...config
+          });
+        } else {
+          // Token 认证时，将 token 添加到查询参数
+          const token = projectId ? this.getToken(projectId) : this.defaultToken;
+          response = await axios.get(`${this.baseUrl}${endpoint}`, {
+            params: {
+              ...params,
+              token: token
+            },
+            ...config
+          });
+        }
+      } else {
+        if (this.cookie) {
+          // Cookie 认证时，参数直接作为请求体
+          response = await axios.post(`${this.baseUrl}${endpoint}`, params, config);
+        } else {
+          // Token 认证时，将 token 添加到请求体
+          const token = projectId ? this.getToken(projectId) : this.defaultToken;
+          response = await axios.post(`${this.baseUrl}${endpoint}`, {
             ...params,
             token: token
-          }
-        });
-      } else {
-        response = await axios.post(`${this.baseUrl}${endpoint}`, {
-          ...params,
-          token: token
-        });
+          }, config);
+        }
       }
 
       return response.data;
@@ -119,6 +297,7 @@ export class YApiService {
     try {
       // 先检查缓存
       if (this.categoryListCache.has(projectId)) {
+        this.logger.debug(`从缓存获取项目 ${projectId} 的分类列表`);
         return this.categoryListCache.get(projectId)!;
       }
       
@@ -126,12 +305,22 @@ export class YApiService {
       this.logger.debug(`从API获取项目分类列表，projectId=${projectId}`);
       const response = await this.request<GetCategoryListResponse>("/api/interface/getCatMenu", { project_id: projectId }, projectId);
       
+      this.logger.debug(`获取分类列表API响应，projectId=${projectId}, errcode=${response.errcode}, errmsg=${response.errmsg || 'none'}`);
+      
       if (response.errcode !== 0) {
         throw new Error(response.errmsg || "获取分类列表失败");
       }
       
+      // 检查返回的数据
+      if (!response.data || !Array.isArray(response.data)) {
+        this.logger.warn(`项目 ${projectId} 的分类列表数据格式异常:`, response.data);
+        // 如果数据格式异常，设置为空数组
+        response.data = [];
+      }
+      
       // 保存到缓存
       this.categoryListCache.set(projectId, response.data);
+      this.logger.debug(`项目 ${projectId} 分类列表已缓存，共 ${response.data.length} 个分类`);
       
       return response.data;
     } catch (error) {
@@ -154,13 +343,22 @@ export class YApiService {
     
     this.logger.info(`开始加载 ${projectIds.length} 个项目的分类列表...`);
     
-    try {
-      // 并行加载所有项目的分类列表
-      await Promise.all(projectIds.map(id => this.getCategoryList(id)));
-      this.logger.info(`已加载 ${this.categoryListCache.size} 个项目的分类列表`);
-    } catch (error) {
-      this.logger.error('加载项目分类列表失败:', error);
+    // 修改为逐个加载，避免一个失败影响全部
+    let successCount = 0;
+    let failedProjects: string[] = [];
+    
+    for (const projectId of projectIds) {
+      try {
+        await this.getCategoryList(projectId);
+        successCount++;
+        this.logger.debug(`项目 ${projectId} 分类列表加载成功`);
+      } catch (error) {
+        failedProjects.push(projectId);
+        this.logger.warn(`项目 ${projectId} 分类列表加载失败:`, error);
+      }
     }
+    
+    this.logger.info(`分类列表加载完成: 成功 ${successCount} 个项目${failedProjects.length > 0 ? `，失败 ${failedProjects.length} 个项目 [${failedProjects.join(', ')}]` : ''}`);
   }
 
   /**
@@ -196,21 +394,46 @@ export class YApiService {
    * 加载所有已配置项目的信息
    */
   async loadAllProjectInfo(): Promise<void> {
-    const projectIds = this.getConfiguredProjectIds();
-    
-    if (projectIds.length === 0) {
-      this.logger.info('未配置项目ID，无法加载项目信息');
-      return;
-    }
-    
-    this.logger.info(`开始加载 ${projectIds.length} 个项目的信息...`);
-    
-    try {
-      // 并行加载所有项目的信息
-      await Promise.all(projectIds.map(id => this.getProjectInfo(id)));
-      this.logger.info(`已加载 ${this.projectInfoCache.size} 个项目的信息`);
-    } catch (error) {
-      this.logger.error('加载项目信息失败:', error);
+    if (this.cookie) {
+      // Cookie 认证模式：动态获取用户项目列表
+      try {
+        this.logger.info('Cookie认证模式：正在获取用户项目列表...');
+        const projects = await this.getUserProjects();
+        
+        if (projects.length === 0) {
+          this.logger.info('未能自动发现项目，Cookie认证模式将支持手动指定项目ID的操作');
+          return;
+        }
+        
+        this.logger.info(`发现 ${projects.length} 个项目，开始加载项目信息...`);
+        
+        // 并行加载所有项目的信息
+        await Promise.all(projects.map(project => 
+          this.getProjectInfo(String(project._id))
+        ));
+        
+        this.logger.info(`已加载 ${this.projectInfoCache.size} 个项目的信息`);
+      } catch (error) {
+        this.logger.error('Cookie认证模式下加载项目信息失败:', error);
+      }
+    } else {
+      // Token 认证模式：使用配置的项目ID
+      const projectIds = this.getConfiguredProjectIds();
+      
+      if (projectIds.length === 0) {
+        this.logger.info('未配置项目ID，无法加载项目信息');
+        return;
+      }
+      
+      this.logger.info(`开始加载 ${projectIds.length} 个项目的信息...`);
+      
+      try {
+        // 并行加载所有项目的信息
+        await Promise.all(projectIds.map(id => this.getProjectInfo(id)));
+        this.logger.info(`已加载 ${this.projectInfoCache.size} 个项目的信息`);
+      } catch (error) {
+        this.logger.error('加载项目信息失败:', error);
+      }
     }
   }
 
@@ -472,6 +695,535 @@ export class YApiService {
       return response.data.list;
     } catch (error) {
       this.logger.error(`获取分类接口列表失败, projectId=${projectId}, catId=${catId}:`, error);
+      throw error;
+    }
+  }
+
+  // ==================== 用户管理相关 ====================
+
+  /**
+   * 获取当前用户信息
+   */
+  async getCurrentUserInfo(): Promise<UserInfo> {
+    try {
+      const response = await this.request<GetUserInfoResponse>("/api/user/status");
+      
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "获取用户信息失败");
+      }
+      
+      return response.data;
+    } catch (error) {
+      this.logger.error('获取当前用户信息失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 获取用户分组列表
+   */
+  async getUserGroups(): Promise<GroupInfo[]> {
+    try {
+      const response = await this.request<GetGroupListResponse>("/api/group/list");
+      
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "获取分组列表失败");
+      }
+      
+      return response.data;
+    } catch (error) {
+      this.logger.error('获取用户分组列表失败:', error);
+      throw error;
+    }
+  }
+
+  // ==================== 项目管理相关 ====================
+
+  /**
+   * 创建新项目
+   */
+  async createProject(params: CreateProjectParams): Promise<any> {
+    try {
+      const response = await this.request<any>("/api/project/add", params, undefined, 'POST');
+      
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "创建项目失败");
+      }
+      
+      return response.data;
+    } catch (error) {
+      this.logger.error('创建项目失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 更新项目信息
+   */
+  async updateProject(params: UpdateProjectParams): Promise<any> {
+    try {
+      const response = await this.request<any>("/api/project/up", params, String(params.id), 'POST');
+      
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "更新项目失败");
+      }
+      
+      return response.data;
+    } catch (error) {
+      this.logger.error('更新项目失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 删除项目
+   */
+  async deleteProject(projectId: string): Promise<any> {
+    try {
+      const response = await this.request<any>("/api/project/del", { id: projectId }, projectId, 'POST');
+      
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "删除项目失败");
+      }
+      
+      return response.data;
+    } catch (error) {
+      this.logger.error(`删除项目失败, projectId=${projectId}:`, error);
+      throw error;
+    }
+  }
+
+  // 注意：YApi开放API不支持获取项目成员功能，已移除该方法
+
+  /**
+   * 添加项目成员
+   */
+  async addProjectMember(projectId: string, uid: number, role: string = 'dev'): Promise<any> {
+    try {
+      const response = await this.request<any>("/api/project/add_member", {
+        id: projectId,
+        member_uid: uid,
+        role: role
+      }, projectId, 'POST');
+      
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "添加项目成员失败");
+      }
+      
+      return response.data;
+    } catch (error) {
+      this.logger.error(`添加项目成员失败, projectId=${projectId}, uid=${uid}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 删除项目成员
+   */
+  async removeProjectMember(projectId: string, uid: number): Promise<any> {
+    try {
+      const response = await this.request<any>("/api/project/del_member", {
+        id: projectId,
+        member_uid: uid
+      }, projectId, 'POST');
+      
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "删除项目成员失败");
+      }
+      
+      return response.data;
+    } catch (error) {
+      this.logger.error(`删除项目成员失败, projectId=${projectId}, uid=${uid}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 获取项目环境配置
+   */
+  async getProjectEnvs(projectId: string): Promise<ProjectEnv[]> {
+    try {
+      const response = await this.request<GetProjectEnvsResponse>("/api/project/get_env", { project_id: projectId }, projectId);
+      
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "获取项目环境配置失败");
+      }
+      
+      return response.data;
+    } catch (error) {
+      this.logger.error(`获取项目环境配置失败, projectId=${projectId}:`, error);
+      throw error;
+    }
+  }
+
+  // 注意：YApi开放API不支持获取项目日志功能，已移除该方法
+
+  // ==================== 分类管理相关 ====================
+
+  /**
+   * 创建接口分类
+   */
+  async createCategory(params: CreateCategoryParams): Promise<any> {
+    try {
+      const response = await this.request<any>("/api/interface/add_cat", params, String(params.project_id), 'POST');
+      
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "创建分类失败");
+      }
+      
+      return response.data;
+    } catch (error) {
+      this.logger.error('创建分类失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 更新接口分类
+   */
+  async updateCategory(catId: string, name: string, desc?: string): Promise<any> {
+    try {
+      const response = await this.request<any>("/api/interface/up_cat", {
+        catid: catId,
+        name: name,
+        desc: desc || ""
+      }, undefined, 'POST');
+      
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "更新分类失败");
+      }
+      
+      return response.data;
+    } catch (error) {
+      this.logger.error(`更新分类失败, catId=${catId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 删除接口分类
+   */
+  async deleteCategory(catId: string): Promise<any> {
+    try {
+      const response = await this.request<any>("/api/interface/del_cat", { catid: catId }, undefined, 'POST');
+      
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "删除分类失败");
+      }
+      
+      return response.data;
+    } catch (error) {
+      this.logger.error(`删除分类失败, catId=${catId}:`, error);
+      throw error;
+    }
+  }
+
+  // ==================== 接口管理相关 ====================
+
+  /**
+   * 删除接口
+   */
+  async deleteInterface(interfaceId: string, projectId: string): Promise<any> {
+    try {
+      const response = await this.request<any>("/api/interface/del", { id: interfaceId }, projectId, 'POST');
+      
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "删除接口失败");
+      }
+      
+      return response.data;
+    } catch (error) {
+      this.logger.error(`删除接口失败, interfaceId=${interfaceId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 复制接口
+   */
+  async copyInterface(interfaceId: string, projectId: string, catId?: string): Promise<any> {
+    try {
+      const params: any = { id: interfaceId };
+      if (catId) {
+        params.catid = catId;
+      }
+      
+      const response = await this.request<any>("/api/interface/copy", params, projectId, 'POST');
+      
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "复制接口失败");
+      }
+      
+      return response.data;
+    } catch (error) {
+      this.logger.error(`复制接口失败, interfaceId=${interfaceId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 运行接口测试
+   */
+  async runInterface(params: RunInterfaceParams): Promise<any> {
+    try {
+      const response = await this.request<any>("/api/interface/run", params, params.project_id, 'POST');
+      
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "运行接口失败");
+      }
+      
+      return response.data;
+    } catch (error) {
+      this.logger.error(`运行接口失败, interfaceId=${params.interface_id}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 获取接口运行历史
+   */
+  async getInterfaceRunHistory(interfaceId: string, projectId: string): Promise<InterfaceRunHistory[]> {
+    try {
+      const response = await this.request<GetInterfaceRunHistoryResponse>("/api/interface/run_history", {
+        interface_id: interfaceId,
+        project_id: projectId
+      }, projectId);
+      
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "获取接口运行历史失败");
+      }
+      
+      return response.data;
+    } catch (error) {
+      this.logger.error(`获取接口运行历史失败, interfaceId=${interfaceId}:`, error);
+      throw error;
+    }
+  }
+
+  // ==================== 测试集合相关 ====================
+
+  /**
+   * 获取项目测试集合列表
+   */
+  async getTestCollections(projectId: string): Promise<TestCollection[]> {
+    try {
+      const response = await this.request<GetTestCollectionsResponse>("/api/col/list", { project_id: projectId }, projectId);
+      
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "获取测试集合列表失败");
+      }
+      
+      return response.data;
+    } catch (error) {
+      this.logger.error(`获取测试集合列表失败, projectId=${projectId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 创建测试集合
+   */
+  async createTestCollection(params: CreateTestCollectionParams): Promise<any> {
+    try {
+      const response = await this.request<any>("/api/col/add_col", params, String(params.project_id), 'POST');
+      
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "创建测试集合失败");
+      }
+      
+      return response.data;
+    } catch (error) {
+      this.logger.error('创建测试集合失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 获取测试集合下的测试用例
+   */
+  async getTestCases(colId: string): Promise<TestCase[]> {
+    try {
+      const response = await this.request<GetTestCasesResponse>("/api/col/case_list", { col_id: colId });
+      
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "获取测试用例列表失败");
+      }
+      
+      return response.data;
+    } catch (error) {
+      this.logger.error(`获取测试用例列表失败, colId=${colId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 创建测试用例
+   */
+  async createTestCase(params: CreateTestCaseParams): Promise<any> {
+    try {
+      const response = await this.request<any>("/api/col/add_case", params, String(params.project_id), 'POST');
+      
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "创建测试用例失败");
+      }
+      
+      return response.data;
+    } catch (error) {
+      this.logger.error('创建测试用例失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 运行测试集合
+   */
+  async runTestCollection(colId: string, envId?: string): Promise<any> {
+    try {
+      const params: any = { col_id: colId };
+      if (envId) {
+        params.env_id = envId;
+      }
+      
+      const response = await this.request<any>("/api/col/run", params, undefined, 'POST');
+      
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "运行测试集合失败");
+      }
+      
+      return response.data;
+    } catch (error) {
+      this.logger.error(`运行测试集合失败, colId=${colId}:`, error);
+      throw error;
+    }
+  }
+
+  // ==================== Mock期望相关 ====================
+
+  /**
+   * 获取接口Mock期望列表
+   */
+  async getMockExpectations(interfaceId: string, projectId: string): Promise<MockExpectation[]> {
+    try {
+      const response = await this.request<GetMockExpectationsResponse>("/api/interface/mock/list", {
+        interface_id: interfaceId,
+        project_id: projectId
+      }, projectId);
+      
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "获取Mock期望列表失败");
+      }
+      
+      return response.data;
+    } catch (error) {
+      this.logger.error(`获取Mock期望列表失败, interfaceId=${interfaceId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 创建Mock期望
+   */
+  async createMockExpectation(params: CreateMockExpectationParams): Promise<any> {
+    try {
+      const response = await this.request<any>("/api/interface/mock/add", params, String(params.project_id), 'POST');
+      
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "创建Mock期望失败");
+      }
+      
+      return response.data;
+    } catch (error) {
+      this.logger.error('创建Mock期望失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 删除Mock期望
+   */
+  async deleteMockExpectation(mockId: string, projectId: string): Promise<any> {
+    try {
+      const response = await this.request<any>("/api/interface/mock/del", { id: mockId }, projectId, 'POST');
+      
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "删除Mock期望失败");
+      }
+      
+      return response.data;
+    } catch (error) {
+      this.logger.error(`删除Mock期望失败, mockId=${mockId}:`, error);
+      throw error;
+    }
+  }
+
+  // ==================== 数据导入导出相关 ====================
+
+  /**
+   * 导入Swagger数据
+   */
+  async importSwagger(projectId: string, catId: string, swaggerData: any, merge?: string): Promise<any> {
+    try {
+      const response = await this.request<any>("/api/interface/import_data", {
+        type: 'swagger',
+        project_id: projectId,
+        catid: catId,
+        json: swaggerData,
+        merge: merge || 'normal'
+      }, projectId, 'POST');
+      
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "导入Swagger数据失败");
+      }
+      
+      return response.data;
+    } catch (error) {
+      this.logger.error(`导入Swagger数据失败, projectId=${projectId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 导入Postman数据
+   */
+  async importPostman(projectId: string, catId: string, postmanData: any): Promise<any> {
+    try {
+      const response = await this.request<any>("/api/interface/import_data", {
+        type: 'postman',
+        project_id: projectId,
+        catid: catId,
+        json: postmanData
+      }, projectId, 'POST');
+      
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "导入Postman数据失败");
+      }
+      
+      return response.data;
+    } catch (error) {
+      this.logger.error(`导入Postman数据失败, projectId=${projectId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 导出项目数据
+   */
+  async exportProject(projectId: string, type: string = 'json'): Promise<any> {
+    try {
+      const response = await this.request<any>("/api/interface/export_data", {
+        type: type,
+        pid: projectId,
+        status: 'all',
+        isWiki: false
+      }, projectId);
+      
+      if (response.errcode !== 0) {
+        throw new Error(response.errmsg || "导出项目数据失败");
+      }
+      
+      return response.data;
+    } catch (error) {
+      this.logger.error(`导出项目数据失败, projectId=${projectId}:`, error);
       throw error;
     }
   }

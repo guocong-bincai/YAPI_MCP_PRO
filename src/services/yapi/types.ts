@@ -108,4 +108,220 @@ export interface ApiSearchResponse extends ApiResponse<{
   total: number;      // 总结果数
   count: number;      // 当前页结果数
   list: ApiSearchResultItem[]; // 结果列表
-}> {} 
+}> {}
+
+// 用户信息
+export interface UserInfo {
+  _id: number;
+  username: string;
+  email: string;
+  role: string;
+  add_time: number;
+  up_time: number;
+  type: string;
+  study: boolean;
+}
+
+// 分组信息
+export interface GroupInfo {
+  _id: number;
+  group_name: string;
+  group_desc: string;
+  owner_uids: number[];
+  members: UserInfo[];
+  add_time: number;
+  up_time: number;
+  type: string;
+}
+
+// 项目成员信息
+export interface ProjectMember {
+  _id: number;
+  username: string;
+  email: string;
+  role: string; // owner, dev, guest
+}
+
+// 测试集合信息
+export interface TestCollection {
+  _id: string;
+  name: string;
+  project_id: number;
+  desc: string;
+  uid: number;
+  add_time: number;
+  up_time: number;
+}
+
+// 测试用例信息
+export interface TestCase {
+  _id: string;
+  name: string;
+  col_id: string;
+  project_id: number;
+  interface_id: string;
+  test_script: string;
+  uid: number;
+  add_time: number;
+  up_time: number;
+}
+
+// Mock期望信息
+export interface MockExpectation {
+  _id: string;
+  name: string;
+  project_id: number;
+  interface_id: string;
+  path: string;
+  method: string;
+  params: any;
+  response: any;
+  enable: boolean;
+  uid: number;
+  add_time: number;
+  up_time: number;
+}
+
+// 项目环境配置
+export interface ProjectEnv {
+  _id: string;
+  name: string;
+  domain: string;
+  header: Array<{name: string; value: string}>;
+  global: Array<{name: string; value: string}>;
+  project_id: number;
+}
+
+// 接口运行历史
+export interface InterfaceRunHistory {
+  _id: string;
+  interface_id: string;
+  project_id: number;
+  uid: number;
+  test_time: number;
+  status: string;
+  response_time: number;
+  response_data: any;
+}
+
+// 项目动态/日志
+export interface ProjectLog {
+  _id: string;
+  content: string;
+  type: string; // add, update, delete
+  uid: number;
+  username: string;
+  project_id: number;
+  add_time: number;
+}
+
+// API响应类型扩展
+export interface GetUserInfoResponse {
+  errcode: number;
+  errmsg: string;
+  data: UserInfo;
+}
+
+export interface GetGroupListResponse {
+  errcode: number;
+  errmsg: string;
+  data: GroupInfo[];
+}
+
+// 注意：YApi开放API不支持获取项目成员功能，已移除相关类型
+
+export interface GetTestCollectionsResponse {
+  errcode: number;
+  errmsg: string;
+  data: TestCollection[];
+}
+
+export interface GetTestCasesResponse {
+  errcode: number;
+  errmsg: string;
+  data: TestCase[];
+}
+
+export interface GetMockExpectationsResponse {
+  errcode: number;
+  errmsg: string;
+  data: MockExpectation[];
+}
+
+export interface GetProjectEnvsResponse {
+  errcode: number;
+  errmsg: string;
+  data: ProjectEnv[];
+}
+
+export interface GetInterfaceRunHistoryResponse {
+  errcode: number;
+  errmsg: string;
+  data: InterfaceRunHistory[];
+}
+
+// 注意：YApi开放API不支持获取项目日志功能，已移除相关类型
+
+// 创建/更新参数类型
+export interface CreateProjectParams {
+  name: string;
+  basepath: string;
+  group_id: number;
+  desc?: string;
+  project_type?: string;
+  color?: string;
+  icon?: string;
+}
+
+export interface UpdateProjectParams {
+  id: number;
+  name?: string;
+  basepath?: string;
+  desc?: string;
+  color?: string;
+  icon?: string;
+  env?: ProjectEnv[];
+  pre_script?: string;
+  after_script?: string;
+}
+
+export interface CreateCategoryParams {
+  name: string;
+  project_id: number;
+  desc?: string;
+}
+
+export interface CreateTestCollectionParams {
+  name: string;
+  project_id: number;
+  desc?: string;
+}
+
+export interface CreateTestCaseParams {
+  name: string;
+  col_id: string;
+  project_id: number;
+  interface_id: string;
+  test_script?: string;
+}
+
+export interface CreateMockExpectationParams {
+  name: string;
+  project_id: number;
+  interface_id: string;
+  path: string;
+  method: string;
+  params?: any;
+  response?: any;
+  enable?: boolean;
+}
+
+export interface RunInterfaceParams {
+  interface_id: string;
+  project_id: string;
+  env_id?: string;
+  domain?: string;
+  headers?: Array<{name: string; value: string}>;
+  params?: any;
+  body?: any;
+} 

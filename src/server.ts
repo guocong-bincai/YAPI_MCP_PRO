@@ -554,6 +554,445 @@ export class YapiMcpServer {
         }
       }
     );
+
+    // ==================== 用户管理相关工具 ====================
+
+    // 获取当前用户信息
+    this.server.tool(
+      "yapi_get_user_info",
+      "获取当前登录用户的信息",
+      {},
+      async () => {
+        try {
+          const userInfo = await this.yapiService.getCurrentUserInfo();
+          
+          const formattedUserInfo = {
+            用户ID: userInfo._id,
+            用户名: userInfo.username,
+            邮箱: userInfo.email,
+            角色: userInfo.role,
+            类型: userInfo.type,
+            创建时间: new Date(userInfo.add_time).toLocaleString(),
+            更新时间: new Date(userInfo.up_time).toLocaleString()
+          };
+
+          return {
+            content: [{
+              type: "text",
+              text: `当前用户信息:\n\n${JSON.stringify(formattedUserInfo, null, 2)}`
+            }],
+          };
+        } catch (error) {
+          this.logger.error('获取用户信息失败:', error);
+          return {
+            content: [{ type: "text", text: `获取用户信息失败: ${error}` }],
+          };
+        }
+      }
+    );
+
+    // 获取用户分组列表
+    this.server.tool(
+      "yapi_get_user_groups",
+      "获取当前用户所属的分组列表",
+      {},
+      async () => {
+        try {
+          const groups = await this.yapiService.getUserGroups();
+          
+          const formattedGroups = groups.map(group => ({
+            分组ID: group._id,
+            分组名称: group.group_name,
+            分组描述: group.group_desc,
+            成员数量: group.members?.length || 0,
+            创建时间: new Date(group.add_time).toLocaleString(),
+            更新时间: new Date(group.up_time).toLocaleString()
+          }));
+
+          return {
+            content: [{
+              type: "text",
+              text: `用户分组列表 (共${groups.length}个分组):\n\n${JSON.stringify(formattedGroups, null, 2)}`
+            }],
+          };
+        } catch (error) {
+          this.logger.error('获取用户分组列表失败:', error);
+          return {
+            content: [{ type: "text", text: `获取用户分组列表失败: ${error}` }],
+          };
+        }
+      }
+    );
+
+    // ==================== 项目管理相关工具 ====================
+
+    // 创建项目
+    this.server.tool(
+      "yapi_create_project",
+      "创建新的YApi项目",
+      {
+        name: z.string().describe("项目名称"),
+        basepath: z.string().describe("项目基础路径，如：/api"),
+        group_id: z.number().describe("所属分组ID"),
+        desc: z.string().optional().describe("项目描述"),
+        project_type: z.string().optional().describe("项目类型"),
+        color: z.string().optional().describe("项目颜色"),
+        icon: z.string().optional().describe("项目图标")
+      },
+      async ({ name, basepath, group_id, desc, project_type, color, icon }) => {
+        try {
+          const params = {
+            name,
+            basepath,
+            group_id,
+            desc: desc || "",
+            project_type: project_type || "private",
+            color: color || "#f56a00",
+            icon: icon || "code"
+          };
+
+          const result = await this.yapiService.createProject(params);
+          
+          return {
+            content: [{
+              type: "text",
+              text: `项目创建成功！\n项目ID: ${result._id}\n项目名称: ${name}\n基础路径: ${basepath}\n所属分组: ${group_id}`
+            }],
+          };
+        } catch (error) {
+          this.logger.error('创建项目失败:', error);
+          return {
+            content: [{ type: "text", text: `创建项目失败: ${error}` }],
+          };
+        }
+      }
+    );
+
+    // 更新项目
+    this.server.tool(
+      "yapi_update_project",
+      "更新YApi项目信息",
+      {
+        id: z.number().describe("项目ID"),
+        name: z.string().optional().describe("项目名称"),
+        basepath: z.string().optional().describe("项目基础路径"),
+        desc: z.string().optional().describe("项目描述"),
+        color: z.string().optional().describe("项目颜色"),
+        icon: z.string().optional().describe("项目图标")
+      },
+      async ({ id, name, basepath, desc, color, icon }) => {
+        try {
+          const params: any = { id };
+          if (name) params.name = name;
+          if (basepath) params.basepath = basepath;
+          if (desc) params.desc = desc;
+          if (color) params.color = color;
+          if (icon) params.icon = icon;
+
+          await this.yapiService.updateProject(params);
+          
+          return {
+            content: [{
+              type: "text",
+              text: `项目更新成功！\n项目ID: ${id}\n已更新的字段: ${Object.keys(params).filter(k => k !== 'id').join(', ')}`
+            }],
+          };
+        } catch (error) {
+          this.logger.error('更新项目失败:', error);
+          return {
+            content: [{ type: "text", text: `更新项目失败: ${error}` }],
+          };
+        }
+      }
+    );
+
+    // 注意：YApi开放API不支持获取项目成员功能，已移除该工具
+
+    // 注意：YApi开放API不支持获取项目日志功能，已移除该工具
+
+    // ==================== 分类管理相关工具 ====================
+
+    // 创建分类
+    this.server.tool(
+      "yapi_create_category",
+      "在YApi项目中创建新的接口分类",
+      {
+        name: z.string().describe("分类名称"),
+        project_id: z.number().describe("项目ID"),
+        desc: z.string().optional().describe("分类描述")
+      },
+      async ({ name, project_id, desc }) => {
+        try {
+          const params = {
+            name,
+            project_id,
+            desc: desc || ""
+          };
+
+          const result = await this.yapiService.createCategory(params);
+          
+          return {
+            content: [{
+              type: "text",
+              text: `分类创建成功！\n分类ID: ${result._id}\n分类名称: ${name}\n所属项目: ${project_id}`
+            }],
+          };
+        } catch (error) {
+          this.logger.error('创建分类失败:', error);
+          return {
+            content: [{ type: "text", text: `创建分类失败: ${error}` }],
+          };
+        }
+      }
+    );
+
+    // 更新分类
+    this.server.tool(
+      "yapi_update_category",
+      "更新YApi接口分类信息",
+      {
+        catId: z.string().describe("分类ID"),
+        name: z.string().describe("分类名称"),
+        desc: z.string().optional().describe("分类描述")
+      },
+      async ({ catId, name, desc }) => {
+        try {
+          await this.yapiService.updateCategory(catId, name, desc);
+          
+          return {
+            content: [{
+              type: "text",
+              text: `分类更新成功！\n分类ID: ${catId}\n分类名称: ${name}`
+            }],
+          };
+        } catch (error) {
+          this.logger.error(`更新分类失败, catId=${catId}:`, error);
+          return {
+            content: [{ type: "text", text: `更新分类失败: ${error}` }],
+          };
+        }
+      }
+    );
+
+    // 删除分类
+    this.server.tool(
+      "yapi_delete_category",
+      "删除YApi接口分类",
+      {
+        catId: z.string().describe("分类ID")
+      },
+      async ({ catId }) => {
+        try {
+          await this.yapiService.deleteCategory(catId);
+          
+          return {
+            content: [{
+              type: "text",
+              text: `分类删除成功！分类ID: ${catId}`
+            }],
+          };
+        } catch (error) {
+          this.logger.error(`删除分类失败, catId=${catId}:`, error);
+          return {
+            content: [{ type: "text", text: `删除分类失败: ${error}` }],
+          };
+        }
+      }
+    );
+
+    // ==================== 接口管理扩展工具 ====================
+
+    // 删除接口
+    this.server.tool(
+      "yapi_delete_interface",
+      "删除YApi接口",
+      {
+        interfaceId: z.string().describe("接口ID"),
+        projectId: z.string().describe("项目ID")
+      },
+      async ({ interfaceId, projectId }) => {
+        try {
+          await this.yapiService.deleteInterface(interfaceId, projectId);
+          
+          return {
+            content: [{
+              type: "text",
+              text: `接口删除成功！接口ID: ${interfaceId}`
+            }],
+          };
+        } catch (error) {
+          this.logger.error(`删除接口失败, interfaceId=${interfaceId}:`, error);
+          return {
+            content: [{ type: "text", text: `删除接口失败: ${error}` }],
+          };
+        }
+      }
+    );
+
+    // 复制接口
+    this.server.tool(
+      "yapi_copy_interface",
+      "复制YApi接口到指定分类",
+      {
+        interfaceId: z.string().describe("要复制的接口ID"),
+        projectId: z.string().describe("项目ID"),
+        catId: z.string().optional().describe("目标分类ID，不指定则复制到原分类")
+      },
+      async ({ interfaceId, projectId, catId }) => {
+        try {
+          const result = await this.yapiService.copyInterface(interfaceId, projectId, catId);
+          
+          return {
+            content: [{
+              type: "text",
+              text: `接口复制成功！\n原接口ID: ${interfaceId}\n新接口ID: ${result._id}\n目标分类: ${catId || '原分类'}`
+            }],
+          };
+        } catch (error) {
+          this.logger.error(`复制接口失败, interfaceId=${interfaceId}:`, error);
+          return {
+            content: [{ type: "text", text: `复制接口失败: ${error}` }],
+          };
+        }
+      }
+    );
+
+    // ==================== 测试集合相关工具 ====================
+
+    // 获取测试集合列表
+    this.server.tool(
+      "yapi_get_test_collections",
+      "获取YApi项目的测试集合列表",
+      {
+        projectId: z.string().describe("项目ID")
+      },
+      async ({ projectId }) => {
+        try {
+          const collections = await this.yapiService.getTestCollections(projectId);
+          
+          const formattedCollections = collections.map(col => ({
+            集合ID: col._id,
+            集合名称: col.name,
+            集合描述: col.desc,
+            创建时间: new Date(col.add_time).toLocaleString(),
+            更新时间: new Date(col.up_time).toLocaleString()
+          }));
+
+          return {
+            content: [{
+              type: "text",
+              text: `项目 ${projectId} 测试集合列表 (共${collections.length}个):\n\n${JSON.stringify(formattedCollections, null, 2)}`
+            }],
+          };
+        } catch (error) {
+          this.logger.error(`获取测试集合列表失败, projectId=${projectId}:`, error);
+          return {
+            content: [{ type: "text", text: `获取测试集合列表失败: ${error}` }],
+          };
+        }
+      }
+    );
+
+    // 创建测试集合
+    this.server.tool(
+      "yapi_create_test_collection",
+      "创建YApi测试集合",
+      {
+        name: z.string().describe("测试集合名称"),
+        project_id: z.number().describe("项目ID"),
+        desc: z.string().optional().describe("测试集合描述")
+      },
+      async ({ name, project_id, desc }) => {
+        try {
+          const params = {
+            name,
+            project_id,
+            desc: desc || ""
+          };
+
+          const result = await this.yapiService.createTestCollection(params);
+          
+          return {
+            content: [{
+              type: "text",
+              text: `测试集合创建成功！\n集合ID: ${result._id}\n集合名称: ${name}\n所属项目: ${project_id}`
+            }],
+          };
+        } catch (error) {
+          this.logger.error('创建测试集合失败:', error);
+          return {
+            content: [{ type: "text", text: `创建测试集合失败: ${error}` }],
+          };
+        }
+      }
+    );
+
+    // ==================== 数据导入导出工具 ====================
+
+    // 导入Swagger数据
+    this.server.tool(
+      "yapi_import_swagger",
+      "导入Swagger数据到YApi项目",
+      {
+        projectId: z.string().describe("项目ID"),
+        catId: z.string().describe("目标分类ID"),
+        swaggerData: z.string().describe("Swagger JSON数据"),
+        merge: z.string().optional().describe("合并模式：normal(普通), good(智能合并), merge(完全覆盖)")
+      },
+      async ({ projectId, catId, swaggerData, merge }) => {
+        try {
+          let parsedData;
+          try {
+            parsedData = JSON.parse(swaggerData);
+          } catch (e) {
+            return {
+              content: [{ type: "text", text: `Swagger数据JSON格式错误: ${e}` }],
+            };
+          }
+
+          const result = await this.yapiService.importSwagger(projectId, catId, parsedData, merge);
+          
+          return {
+            content: [{
+              type: "text",
+              text: `Swagger数据导入成功！\n项目ID: ${projectId}\n分类ID: ${catId}\n导入接口数量: ${result.count || '未知'}`
+            }],
+          };
+        } catch (error) {
+          this.logger.error(`导入Swagger数据失败, projectId=${projectId}:`, error);
+          return {
+            content: [{ type: "text", text: `导入Swagger数据失败: ${error}` }],
+          };
+        }
+      }
+    );
+
+    // 导出项目数据
+    this.server.tool(
+      "yapi_export_project",
+      "导出YApi项目数据",
+      {
+        projectId: z.string().describe("项目ID"),
+        type: z.string().optional().describe("导出格式：json, markdown, swagger")
+      },
+      async ({ projectId, type }) => {
+        try {
+          const result = await this.yapiService.exportProject(projectId, type || 'json');
+          
+          return {
+            content: [{
+              type: "text",
+              text: `项目数据导出成功！\n项目ID: ${projectId}\n导出格式: ${type || 'json'}\n\n导出数据:\n${JSON.stringify(result, null, 2)}`
+            }],
+          };
+        } catch (error) {
+          this.logger.error(`导出项目数据失败, projectId=${projectId}:`, error);
+          return {
+            content: [{ type: "text", text: `导出项目数据失败: ${error}` }],
+          };
+        }
+      }
+    );
   }
 
   async connect(transport: Transport): Promise<void> {

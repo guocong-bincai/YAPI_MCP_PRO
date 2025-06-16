@@ -32,11 +32,36 @@ export async function startServer(): Promise<void> {
   }
 
   console.log("\n可用工具:");
-  console.log("- yapi_get_api_desc: 获取YApi接口信息");
+  console.log("=== 基础接口管理 ===");
+  console.log("- yapi_get_api_desc: 获取YApi接口详细信息");
   console.log("- yapi_save_api: 新增或更新YApi接口");
   console.log("- yapi_search_apis: 搜索YApi接口");
+  console.log("- yapi_delete_interface: 删除YApi接口");
+  console.log("- yapi_copy_interface: 复制YApi接口");
+  
+  console.log("\n=== 项目管理 ===");
   console.log("- yapi_list_projects: 列出YApi的项目ID和项目名称");
+  console.log("- yapi_create_project: 创建新的YApi项目");
+  console.log("- yapi_update_project: 更新YApi项目信息");
+  // 注意：YApi开放API不支持项目成员和日志功能，已移除相关工具
+  
+  console.log("\n=== 分类管理 ===");
   console.log("- yapi_get_categories: 获取YApi项目下的接口分类列表");
+  console.log("- yapi_create_category: 创建新的接口分类");
+  console.log("- yapi_update_category: 更新接口分类信息");
+  console.log("- yapi_delete_category: 删除接口分类");
+  
+  console.log("\n=== 用户管理 ===");
+  console.log("- yapi_get_user_info: 获取当前登录用户信息");
+  console.log("- yapi_get_user_groups: 获取用户所属分组列表");
+  
+  console.log("\n=== 测试集合 ===");
+  console.log("- yapi_get_test_collections: 获取项目测试集合列表");
+  console.log("- yapi_create_test_collection: 创建测试集合");
+  
+  console.log("\n=== 数据导入导出 ===");
+  console.log("- yapi_import_swagger: 导入Swagger数据");
+  console.log("- yapi_export_project: 导出项目数据");
 }
 
 // If this file is being run directly, start the server
