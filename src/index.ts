@@ -16,7 +16,8 @@ export async function startServer(): Promise<void> {
     config.yapiBaseUrl, 
     config.yapiToken, 
     config.yapiLogLevel, 
-    config.yapiCacheTTL
+    config.yapiCacheTTL,
+    config.yapiEnableCache
   );
 
   // Check if we're running in stdio mode (e.g., via CLI)

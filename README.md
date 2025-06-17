@@ -728,3 +728,24 @@ pnpm run build
 
 **🚀 现在你已经拥有了最强大的YApi AI助手！**
 
+| 环境变量 | 说明 | 默认值 | 示例 |
+|----------|------|--------|------|
+| `YAPI_BASE_URL` | YApi服务器地址 | 无 | `http://yapi.example.com` |
+| `YAPI_TOKEN` | 认证Token或Cookie | 无 | Token: `projectId:token` 或 Cookie: `_yapi_token=xxx; _yapi_uid=123` |
+| `PORT` | MCP服务器端口 | `3388` | `3000` |
+| `YAPI_CACHE_TTL` | 缓存时效（分钟） | `10` | `30` |
+| `YAPI_LOG_LEVEL` | 日志级别 | `info` | `debug`, `info`, `warn`, `error` |
+| `YAPI_ENABLE_CACHE` | 是否启用缓存 | `true` | `false` 禁用缓存，`true` 启用缓存 |
+
+## ✨ 功能特性
+
+- **🔐 多种认证方式**: 支持Token参数认证和Cookie认证
+- **🚀 智能项目发现**: 自动发现用户有权限的项目
+- **📋 完整接口管理**: 查看、搜索、创建、更新、删除接口
+- **🏷️ 分类管理**: 创建、更新、删除接口分类
+- **🔍 强大搜索**: 支持项目、接口名称、路径的模糊搜索
+- **🧪 测试集合**: 管理和运行接口测试
+- **📄 数据导入导出**: 支持Swagger导入和多格式导出
+- **⚡ 实时数据**: 智能缓存机制，确保数据时效性
+- **🎯 灵活缓存控制**: 支持强制刷新和完全禁用缓存
+

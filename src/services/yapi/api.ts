@@ -44,13 +44,15 @@ export class YApiService {
   private projectInfoCache: Map<string, ProjectInfo> = new Map(); // 缓存项目信息
   private categoryListCache: Map<string, CategoryInfo[]> = new Map(); // 缓存项目分类列表
   private readonly logger: Logger;
+  private readonly enableCache: boolean; // 新增：是否启用缓存
 
-  constructor(baseUrl: string, token: string, logLevel: string = "info") {
+  constructor(baseUrl: string, token: string, logLevel: string = "info", enableCache: boolean = true) {
     this.baseUrl = baseUrl;
     this.tokenMap = new Map();
     this.defaultToken = "";
     this.cookie = ""; // 初始化 cookie
     this.logger = new Logger('YApiService', logLevel);
+    this.enableCache = enableCache; // 设置是否启用缓存
     
     // 解析token字符串，格式为: "projectId:token,projectId:token,..." 或 Cookie 格式
     if (token) {
@@ -74,7 +76,7 @@ export class YApiService {
       }
     }
     
-    this.logger.info(`YApiService已初始化，baseUrl=${baseUrl}`);
+    this.logger.info(`YApiService已初始化，baseUrl=${baseUrl}, enableCache=${enableCache}`);
   }
 
   /**
@@ -213,6 +215,43 @@ export class YApiService {
   }
 
   /**
+   * 清除项目信息缓存
+   * @param projectId 项目ID，如果不指定则清除所有缓存
+   */
+  clearProjectInfoCache(projectId?: string): void {
+    if (projectId) {
+      this.projectInfoCache.delete(projectId);
+      this.logger.debug(`已清除项目 ${projectId} 的项目信息缓存`);
+    } else {
+      this.projectInfoCache.clear();
+      this.logger.debug('已清除所有项目信息缓存');
+    }
+  }
+
+  /**
+   * 清除分类列表缓存
+   * @param projectId 项目ID，如果不指定则清除所有缓存
+   */
+  clearCategoryListCache(projectId?: string): void {
+    if (projectId) {
+      this.categoryListCache.delete(projectId);
+      this.logger.debug(`已清除项目 ${projectId} 的分类列表缓存`);
+    } else {
+      this.categoryListCache.clear();
+      this.logger.debug('已清除所有分类列表缓存');
+    }
+  }
+
+  /**
+   * 清除所有缓存
+   */
+  clearAllCache(): void {
+    this.clearProjectInfoCache();
+    this.clearCategoryListCache();
+    this.logger.info('已清除所有缓存');
+  }
+
+  /**
    * 根据项目ID获取对应的token
    */
   private getToken(projectId: string): string {
@@ -292,17 +331,18 @@ export class YApiService {
   /**
    * 获取分类列表
    * @param projectId 项目ID
+   * @param forceRefresh 是否强制刷新，跳过缓存
    */
-  async getCategoryList(projectId: string): Promise<CategoryInfo[]> {
+  async getCategoryList(projectId: string, forceRefresh: boolean = false): Promise<CategoryInfo[]> {
     try {
-      // 先检查缓存
-      if (this.categoryListCache.has(projectId)) {
+      // 如果启用缓存且不强制刷新，先检查缓存
+      if (this.enableCache && !forceRefresh && this.categoryListCache.has(projectId)) {
         this.logger.debug(`从缓存获取项目 ${projectId} 的分类列表`);
         return this.categoryListCache.get(projectId)!;
       }
       
-      // 缓存中没有，从API获取
-      this.logger.debug(`从API获取项目分类列表，projectId=${projectId}`);
+      // 从API获取最新数据
+      this.logger.debug(`从API获取项目分类列表，projectId=${projectId}${forceRefresh ? ' (强制刷新)' : ''}`);
       const response = await this.request<GetCategoryListResponse>("/api/interface/getCatMenu", { project_id: projectId }, projectId);
       
       this.logger.debug(`获取分类列表API响应，projectId=${projectId}, errcode=${response.errcode}, errmsg=${response.errmsg || 'none'}`);
@@ -318,9 +358,11 @@ export class YApiService {
         response.data = [];
       }
       
-      // 保存到缓存
-      this.categoryListCache.set(projectId, response.data);
-      this.logger.debug(`项目 ${projectId} 分类列表已缓存，共 ${response.data.length} 个分类`);
+      // 如果启用缓存，则更新缓存
+      if (this.enableCache) {
+        this.categoryListCache.set(projectId, response.data);
+        this.logger.debug(`项目 ${projectId} 分类列表已缓存，共 ${response.data.length} 个分类`);
+      }
       
       return response.data;
     } catch (error) {
@@ -364,24 +406,29 @@ export class YApiService {
   /**
    * 获取项目信息
    * @param projectId 项目ID
+   * @param forceRefresh 是否强制刷新，跳过缓存
    */
-  async getProjectInfo(projectId: string): Promise<ProjectInfo> {
+  async getProjectInfo(projectId: string, forceRefresh: boolean = false): Promise<ProjectInfo> {
     try {
-      // 先检查缓存
-      if (this.projectInfoCache.has(projectId)) {
+      // 如果启用缓存且不强制刷新，先检查缓存
+      if (this.enableCache && !forceRefresh && this.projectInfoCache.has(projectId)) {
+        this.logger.debug(`从缓存获取项目 ${projectId} 的项目信息`);
         return this.projectInfoCache.get(projectId)!;
       }
       
-      // 缓存中没有，从API获取
-      this.logger.debug(`从API获取项目信息，projectId=${projectId}`);
+      // 从API获取最新数据
+      this.logger.debug(`从API获取项目信息，projectId=${projectId}${forceRefresh ? ' (强制刷新)' : ''}`);
       const response = await this.request<GetProjectResponse>("/api/project/get", { id: projectId }, projectId);
       
       if (response.errcode !== 0) {
         throw new Error(response.errmsg || "获取项目信息失败");
       }
       
-      // 保存到缓存
-      this.projectInfoCache.set(projectId, response.data);
+      // 如果启用缓存，则更新缓存
+      if (this.enableCache) {
+        this.projectInfoCache.set(projectId, response.data);
+        this.logger.debug(`项目 ${projectId} 信息已缓存`);
+      }
       
       return response.data;
     } catch (error) {

@@ -17,9 +17,9 @@ export class YapiMcpServer {
   private sseTransport: SSEServerTransport | null = null;
   private readonly isStdioMode: boolean;
 
-  constructor(yapiBaseUrl: string, yapiToken: string, yapiLogLevel: string = "info", yapiCacheTTL: number = 10) {
+  constructor(yapiBaseUrl: string, yapiToken: string, yapiLogLevel: string = "info", yapiCacheTTL: number = 10, enableCache: boolean = true) {
     this.logger = new Logger("YapiMCP", yapiLogLevel);
-    this.yapiService = new YApiService(yapiBaseUrl, yapiToken, yapiLogLevel);
+    this.yapiService = new YApiService(yapiBaseUrl, yapiToken, yapiLogLevel, enableCache);
     this.projectInfoCache = new ProjectInfoCache(yapiCacheTTL);
     // 判断是否为stdio模式
     this.isStdioMode = process.env.NODE_ENV === "cli" || process.argv.includes("--stdio");
@@ -32,19 +32,17 @@ export class YapiMcpServer {
     });
 
     this.registerTools();
-    this.initializeCache();
+    // 不在构造函数中初始化缓存，改为在启动时初始化
   }
 
   private async initializeCache(): Promise<void> {
     try {
       // 检查缓存是否过期
       if (this.projectInfoCache.isCacheExpired()) {
-        this.logger.info('缓存已过期，将异步更新缓存数据');
+        this.logger.info('缓存已过期，正在同步更新缓存数据');
 
-        // 异步加载最新的项目信息，不阻塞初始化过程
-        this.asyncUpdateCache().catch(error => {
-          this.logger.error('异步更新缓存失败:', error);
-        });
+        // 同步加载最新的项目信息和分类列表
+        await this.asyncUpdateCache();
       } else {
         // 从缓存加载数据
         const cachedProjectInfo = this.projectInfoCache.loadFromCache();
@@ -57,21 +55,30 @@ export class YapiMcpServer {
           });
 
           this.logger.info(`已从缓存加载 ${cachedProjectInfo.size} 个项目信息`);
+          
+          // 确保分类列表也被加载
+          this.logger.info('正在加载分类列表...');
+          await this.yapiService.loadAllCategoryLists();
+          this.logger.info('分类列表加载完成');
         } else {
-          // 缓存为空，异步更新
-          this.logger.info('缓存为空，将异步更新缓存数据');
-          this.asyncUpdateCache().catch(error => {
-            this.logger.error('异步更新缓存失败:', error);
-          });
+          // 缓存为空，同步更新
+          this.logger.info('缓存为空，正在同步更新缓存数据');
+          await this.asyncUpdateCache();
         }
       }
     } catch (error) {
-      this.logger.error('加载或检查缓存时出错:', error);
+      this.logger.error('初始化缓存时出错:', error);
 
-      // 出错时也尝试异步更新缓存
-      this.asyncUpdateCache().catch(err => {
-        this.logger.error('异步更新缓存失败:', err);
-      });
+      // 出错时也尝试加载基本的项目信息
+      try {
+        this.logger.info('尝试加载基本项目信息...');
+        await this.yapiService.loadAllProjectInfo();
+        await this.yapiService.loadAllCategoryLists();
+        this.logger.info('基本数据加载成功');
+      } catch (fallbackError) {
+        this.logger.error('加载基本数据也失败:', fallbackError);
+        throw fallbackError;
+      }
     }
   }
 
@@ -483,16 +490,21 @@ export class YapiMcpServer {
       },
       async ({ projectId }) => {
         try {
-          // 获取项目信息
-          const projectInfo = this.yapiService.getProjectInfoCache().get(projectId);
+          // 获取项目信息（强制刷新以确保数据最新）
+          let projectInfo = this.yapiService.getProjectInfoCache().get(projectId);
           if (!projectInfo) {
-            return {
-              content: [{ type: "text", text: `未找到项目ID为 ${projectId} 的项目信息，请确认项目ID正确` }],
-            };
+            try {
+              projectInfo = await this.yapiService.getProjectInfo(projectId, true);
+            } catch (error) {
+              return {
+                content: [{ type: "text", text: `无法获取项目ID为 ${projectId} 的项目信息: ${error}` }],
+              };
+            }
           }
 
-          // 获取项目下的分类列表
-          const categoryList = this.yapiService.getCategoryListCache().get(projectId);
+          // 强制刷新获取项目下的最新分类列表
+          this.logger.info(`强制刷新获取项目 ${projectId} 的分类列表`);
+          const categoryList = await this.yapiService.getCategoryList(projectId, true);
 
           if (!categoryList || categoryList.length === 0) {
             return {
@@ -518,8 +530,8 @@ export class YapiMcpServer {
                 分类ID: cat._id,
                 分类名称: cat.name,
                 分类描述: cat.desc || '无描述',
-                创建时间: new Date(cat.add_time).toLocaleString(),
-                更新时间: new Date(cat.up_time).toLocaleString(),
+                创建时间: new Date(cat.add_time * 1000).toLocaleString(),
+                更新时间: new Date(cat.up_time * 1000).toLocaleString(),
                 接口列表: simplifiedApis
               };
             } catch (error) {
@@ -529,8 +541,8 @@ export class YapiMcpServer {
                 分类ID: cat._id,
                 分类名称: cat.name,
                 分类描述: cat.desc || '无描述',
-                创建时间: new Date(cat.add_time).toLocaleString(),
-                更新时间: new Date(cat.up_time).toLocaleString(),
+                创建时间: new Date(cat.add_time * 1000).toLocaleString(),
+                更新时间: new Date(cat.up_time * 1000).toLocaleString(),
                 接口列表: [],
                 错误: `获取接口列表失败: ${error}`
               };
@@ -547,9 +559,9 @@ export class YapiMcpServer {
             }],
           };
         } catch (error) {
-          this.logger.error(`获取接口分类列表时出错:`, error);
+          this.logger.error(`获取项目分类列表失败:`, error);
           return {
-            content: [{ type: "text", text: `获取接口分类列表出错: ${error}` }],
+            content: [{ type: "text", text: `获取项目分类列表失败: ${error}` }],
           };
         }
       }
@@ -993,15 +1005,84 @@ export class YapiMcpServer {
         }
       }
     );
+
+    // 缓存管理工具
+    this.server.tool(
+      "yapi_refresh_cache",
+      "刷新YApi缓存数据，包括项目信息和分类列表。注意：为了确保数据时效性，建议在需要最新数据时使用此工具",
+      {
+        projectId: z.string().optional().describe("项目ID，如果不指定则刷新所有缓存"),
+        type: z.enum(["all", "categories", "projects"]).optional().default("all").describe("刷新类型：all(全部), categories(分类), projects(项目)")
+      },
+      async ({ projectId, type = "all" }) => {
+        try {
+          let refreshedItems: string[] = [];
+
+          if (type === "all" || type === "categories") {
+            if (projectId) {
+              this.yapiService.clearCategoryListCache(projectId);
+              // 重新加载该项目的分类列表
+              await this.yapiService.getCategoryList(projectId, true);
+              refreshedItems.push(`项目 ${projectId} 的分类列表`);
+            } else {
+              this.yapiService.clearCategoryListCache();
+              // 重新加载所有项目的分类列表，强制刷新
+              const projectIds = Array.from(this.yapiService.getProjectInfoCache().keys());
+              for (const pid of projectIds) {
+                try {
+                  await this.yapiService.getCategoryList(pid, true);
+                } catch (error) {
+                  this.logger.warn(`刷新项目 ${pid} 分类列表失败:`, error);
+                }
+              }
+              refreshedItems.push("所有项目的分类列表");
+            }
+          }
+
+          if (type === "all" || type === "projects") {
+            if (projectId) {
+              this.yapiService.clearProjectInfoCache(projectId);
+              // 重新加载特定项目信息
+              await this.yapiService.getProjectInfo(projectId, true);
+              refreshedItems.push(`项目 ${projectId} 的项目信息`);
+            } else {
+              this.yapiService.clearProjectInfoCache();
+              // 重新加载所有项目信息
+              await this.yapiService.loadAllProjectInfo();
+              refreshedItems.push("所有项目信息");
+            }
+          }
+
+          return {
+            content: [{
+              type: "text",
+              text: `缓存刷新成功！已刷新：${refreshedItems.join(", ")}\n\n提示：为了保证数据时效性，本MCP服务器已优化为在关键操作时自动获取最新数据。`
+            }],
+          };
+        } catch (error) {
+          this.logger.error('刷新缓存失败:', error);
+          return {
+            content: [{ type: "text", text: `刷新缓存失败: ${error}` }],
+          };
+        }
+      }
+    );
   }
 
   async connect(transport: Transport): Promise<void> {
     this.logger.info("连接到传输层...");
+    // 在连接之前确保缓存已初始化
+    await this.initializeCache();
     await this.server.connect(transport);
     this.logger.info("服务器已连接，准备处理请求");
   }
 
   async startHttpServer(port: number): Promise<void> {
+    // 在启动HTTP服务器之前确保缓存已初始化
+    this.logger.info("正在初始化缓存...");
+    await this.initializeCache();
+    this.logger.info("缓存初始化完成");
+
     const app = express();
 
     app.get("/sse", async (req: Request, res: Response) => {

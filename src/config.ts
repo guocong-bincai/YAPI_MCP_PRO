@@ -5,18 +5,20 @@ import { hideBin } from "yargs/helpers";
 // Load environment variables from .env file
 config();
 
-interface ServerConfig {
+export interface ServerConfig {
   yapiBaseUrl: string;
   yapiToken: string;
   port: number;
   yapiCacheTTL: number; // 缓存时效，单位为分钟
   yapiLogLevel: string; // 日志级别：debug, info, warn, error
+  yapiEnableCache: boolean; // 新增：是否启用缓存
   configSources: {
     yapiBaseUrl: "cli" | "env" | "default";
     yapiToken: "cli" | "env" | "default";
     port: "cli" | "env" | "default";
     yapiCacheTTL: "cli" | "env" | "default";
     yapiLogLevel: "cli" | "env" | "default";
+    yapiEnableCache: "cli" | "env" | "default"; // 新增
   };
 }
 
@@ -31,6 +33,7 @@ interface CliArgs {
   port?: number;
   "yapi-cache-ttl"?: number;
   "yapi-log-level"?: string;
+  "yapi-enable-cache"?: boolean;
 }
 
 export function getServerConfig(): ServerConfig {
@@ -58,6 +61,10 @@ export function getServerConfig(): ServerConfig {
         description: "YApi日志级别 (debug, info, warn, error)",
         choices: ["debug", "info", "warn", "error"],
       },
+      "yapi-enable-cache": {
+        type: "boolean",
+        description: "是否启用YApi缓存",
+      },
     })
     .help()
     .parseSync() as CliArgs;
@@ -68,12 +75,14 @@ export function getServerConfig(): ServerConfig {
     port: 3333,
     yapiCacheTTL: 10, // 默认缓存10分钟
     yapiLogLevel: "info", // 默认日志级别
+    yapiEnableCache: true, // 默认启用缓存
     configSources: {
       yapiBaseUrl: "default",
       yapiToken: "default",
       port: "default",
       yapiCacheTTL: "default",
       yapiLogLevel: "default",
+      yapiEnableCache: "default", // 新增
     },
   };
 
@@ -130,6 +139,21 @@ export function getServerConfig(): ServerConfig {
     }
   }
 
+  // Handle YAPI_ENABLE_CACHE
+  if (argv["yapi-enable-cache"] !== undefined) {
+    config.yapiEnableCache = argv["yapi-enable-cache"];
+    config.configSources.yapiEnableCache = "cli";
+  } else if (process.env.YAPI_ENABLE_CACHE !== undefined) {
+    const enableCache = process.env.YAPI_ENABLE_CACHE.toLowerCase();
+    if (enableCache === "false" || enableCache === "0") {
+      config.yapiEnableCache = false;
+      config.configSources.yapiEnableCache = "env";
+    } else if (enableCache === "true" || enableCache === "1") {
+      config.yapiEnableCache = true;
+      config.configSources.yapiEnableCache = "env";
+    }
+  }
+
   // Log configuration sources
   console.log("\nConfiguration:");
   console.log(
@@ -141,6 +165,7 @@ export function getServerConfig(): ServerConfig {
   console.log(`- PORT: ${config.port} (source: ${config.configSources.port})`);
   console.log(`- YAPI_CACHE_TTL: ${config.yapiCacheTTL} 分钟 (source: ${config.configSources.yapiCacheTTL})`);
   console.log(`- YAPI_LOG_LEVEL: ${config.yapiLogLevel} (source: ${config.configSources.yapiLogLevel})`);
+  console.log(`- YAPI_ENABLE_CACHE: ${config.yapiEnableCache} (source: ${config.configSources.yapiEnableCache})`);
   console.log(); // Empty line for better readability
 
   return config;
