@@ -81,12 +81,94 @@ npm run build
 
 ### 3. 快速配置
 
+#### 📁 配置文件说明
+
+项目的所有敏感信息都集中在 `.env` 文件中，这个文件**不会**被提交到Git，确保您的隐私安全。
+
 ```bash
-# 复制配置模板
+# 1. 复制配置模板
 cp .env.example .env
 
-# 编辑配置文件
+# 2. 编辑配置文件（选择您喜欢的编辑器）
 vim .env
+# 或者
+nano .env
+# 或者
+code .env
+```
+
+#### 🔐 必填配置项
+
+打开 `.env` 文件，您需要填写以下**必填项**：
+
+```env
+# === 必填项 ===
+YAPI_BASE_URL=http://your-yapi-server.com    # 替换为您的YApi服务器地址
+YAPI_TOKEN=your_auth_token                   # 替换为您的认证信息（见下方获取方法）
+
+# === 可选项（有默认值）===
+PORT=3388                                    # MCP服务端口，默认3388
+YAPI_CACHE_TTL=10                           # 缓存时间（分钟），默认10分钟
+YAPI_LOG_LEVEL=info                         # 日志级别，默认info
+```
+
+#### 🎯 获取认证信息的两种方式
+
+##### 方式一：Cookie认证（推荐）⭐
+**优势**: 自动发现所有有权限的项目，配置简单
+
+**步骤**:
+1. 打开浏览器，登录您的YApi系统
+2. 按 `F12` 打开开发者工具
+3. 切换到 `Network`（网络）面板
+4. 在YApi页面中随便点击一个功能（如刷新页面）
+5. 在网络请求中找到任意一个请求，点击查看详情
+6. 找到 `Request Headers` 中的 `Cookie` 字段
+7. 复制整个Cookie值
+
+```env
+# Cookie认证示例（复制您自己的Cookie）
+YAPI_TOKEN=_yapi_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; _yapi_uid=1234; other_cookies=values
+```
+
+##### 方式二：Token认证
+**优势**: 长期有效，更安全
+
+**步骤**:
+1. 登录YApi，进入您要管理的项目
+2. 点击项目 `设置` → `Token配置`
+3. 复制项目Token和项目ID
+4. 按格式配置多个项目（如有需要）
+
+```env
+# Token认证示例
+# 格式：项目ID:项目Token,项目ID:项目Token
+YAPI_TOKEN=123:abc123token,456:def456token
+
+# 单个项目示例
+YAPI_TOKEN=123:abc123token
+```
+
+#### 📋 完整配置示例
+
+```env
+# ================================
+# YAPI MCP PRO 配置文件
+# ================================
+# ⚠️ 重要：此文件包含敏感信息，不要提交到Git仓库！
+
+# === 基础配置（必填）===
+YAPI_BASE_URL=http://yapi.yourcompany.com
+YAPI_TOKEN=_yapi_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; _yapi_uid=1234
+
+# === 服务配置（可选）===
+PORT=3388
+YAPI_CACHE_TTL=10
+YAPI_LOG_LEVEL=info
+
+# === 高级配置（可选）===
+# YAPI_GROUP_ID=1557              # 默认分组ID（创建项目时使用）
+# YAPI_ENABLE_CACHE=true          # 是否启用缓存，默认true
 ```
 
 ### 4. 启动服务
@@ -704,29 +786,164 @@ MIT License - 详见 [LICENSE](LICENSE) 文件
 
 ## 🎉 快速开始模板
 
+### 📦 一键部署（开盒即用）
+
 ```bash
-# 一键启动
+# 1. 克隆项目
 git clone git@github.com:guocong-bincai/YAPI_MCP_PRO.git
 cd YAPI_MCP_PRO
-cp .env.example .env
-# 编辑 .env 配置你的YApi信息
+
+# 2. 安装依赖
 pnpm install
-pnpm run build
-./start-mcp.sh start
+# 或者使用 npm
+npm install
 
-# 配置Cursor
-# 在 settings.json 中添加：
-# "mcpServers": {
-#   "yapi-mcp-pro": {
-#     "url": "http://localhost:3388/sse"
-#   }
-# }
-
-# 开始使用
-# 在Cursor中输入：请列出所有YApi项目
+# 3. 创建配置文件
+cp .env.example .env
 ```
 
-**🚀 现在你已经拥有了最强大的YApi AI助手！**
+### ⚙️ 配置YApi连接信息
+
+编辑 `.env` 文件，填写您的YApi信息：
+
+```bash
+# 使用任意编辑器打开配置文件
+code .env        # VS Code
+vim .env         # Vim
+nano .env        # Nano
+```
+
+**最小配置示例**：
+```env
+# 必填项
+YAPI_BASE_URL=http://your-yapi-server.com
+YAPI_TOKEN=your_cookie_or_token
+
+# 可选项（推荐保持默认）
+PORT=3388
+YAPI_CACHE_TTL=10
+YAPI_LOG_LEVEL=info
+```
+
+### 🔑 获取认证信息（二选一）
+
+#### 方法一：Cookie认证（推荐）
+1. 浏览器登录YApi
+2. 按 `F12` → `Network` 面板
+3. 操作任意功能，点击网络请求
+4. 复制 `Request Headers` 中的 `Cookie`
+5. 粘贴到 `YAPI_TOKEN=` 后面
+
+#### 方法二：Token认证
+1. YApi项目 → 设置 → Token配置
+2. 复制项目ID和Token
+3. 格式：`YAPI_TOKEN=项目ID:Token`
+
+### 🚀 启动服务
+
+```bash
+# 构建项目
+pnpm run build
+
+# 启动MCP服务
+./start-mcp.sh start
+
+# 检查状态
+./start-mcp.sh status
+```
+
+### 🔗 配置AI编辑器
+
+#### Cursor配置
+编辑 Cursor 的 `settings.json` 文件：
+
+**配置文件位置**：
+- macOS: `~/Library/Application Support/Cursor/User/settings.json`
+- Windows: `%APPDATA%\Cursor\User\settings.json`
+- Linux: `~/.config/Cursor/User/settings.json`
+
+**添加配置**：
+```json
+{
+  "mcpServers": {
+    "yapi-mcp-pro": {
+      "url": "http://localhost:3388/sse"
+    }
+  }
+}
+```
+
+#### Claude Desktop配置
+编辑 `claude_desktop_config.json`：
+```json
+{
+  "mcpServers": {
+    "yapi-mcp-pro": {
+      "command": "node",
+      "args": ["/path/to/YAPI_MCP_PRO/dist/index.js"],
+      "env": {
+        "YAPI_BASE_URL": "http://your-yapi-server.com",
+        "YAPI_TOKEN": "your_token"
+      }
+    }
+  }
+}
+```
+
+### ✅ 验证安装
+
+在AI编辑器中输入以下任意命令测试：
+
+```
+请列出所有YApi项目
+请搜索用户相关的接口
+请帮我创建一个新的接口分类
+```
+
+### 🎯 配置检查清单
+
+- [ ] 已克隆项目并安装依赖
+- [ ] 已创建 `.env` 文件
+- [ ] 已配置 `YAPI_BASE_URL`（YApi服务器地址）
+- [ ] 已配置 `YAPI_TOKEN`（Cookie或Token）
+- [ ] 已构建项目 (`pnpm run build`)
+- [ ] 已启动服务 (`./start-mcp.sh start`)
+- [ ] 已配置AI编辑器的MCP连接
+- [ ] 已测试基本功能
+
+### 🔒 安全提醒
+
+⚠️ **重要安全事项**：
+
+1. **`.env` 文件包含敏感信息**，绝对不要提交到Git仓库
+2. **定期更换Token**，尤其是在多人协作的项目中
+3. **不要在代码中硬编码**任何Token或密钥
+4. **使用完毕后及时停止服务**：`./start-mcp.sh stop`
+
+✅ **项目已配置安全防护**：
+- `.gitignore` 已忽略所有敏感文件
+- 代码中使用环境变量，无硬编码敏感信息
+- 支持Token掩码显示，保护日志安全
+
+### 🆘 常见问题
+
+**Q: 提示"与YApi服务器通信失败"？**
+A: 检查 `YAPI_BASE_URL` 是否正确，确保网络能访问YApi服务器
+
+**Q: 提示"请登录"或"未配置token"？**
+A: 重新获取Cookie或Token，确保格式正确
+
+**Q: 端口3388被占用？**
+A: 修改 `.env` 中的 `PORT=3389`，然后重启服务
+
+**Q: 如何确保我的Token安全？**
+A: 
+- 使用Cookie认证（自动过期）
+- 定期更换Token
+- 不要截图或分享包含Token的配置
+- 项目配置的.gitignore已保护敏感文件
+
+**🚀 现在你已经拥有了最强大且安全的YApi AI助手！**
 
 | 环境变量 | 说明 | 默认值 | 示例 |
 |----------|------|--------|------|
