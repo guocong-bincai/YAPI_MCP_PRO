@@ -7,12 +7,13 @@ dist
 
 # Environment variables
 .env
-.env.*
 .env.local
 .env.*.local
 .env.backup
 .env.production
 .env.development
+# 但是允许 .env.example 模板文件
+!.env.example
 
 # IDE
 .vscode/*
