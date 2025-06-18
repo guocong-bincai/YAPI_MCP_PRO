@@ -34,5 +34,10 @@ coverage
 
 # OS
 .DS_Store
-Thumbs.db 
-.yapi-cache# 主要仓库已切换到GitLab
+Thumbs.db
+
+# Runtime files
+.yapi-cache/
+*.pid
+
+# 主要仓库已切换到GitLab
