@@ -97,6 +97,14 @@ nano .env
 code .env
 ```
 
+💡 **提示**: `.env.example` 文件包含了**超详细的配置指南**，包括：
+- 🍪 Cookie认证的分步骤获取方法（推荐）
+- 🔑 Token认证的完整操作流程
+- 📋 真实格式的配置示例
+- ✅ 配置验证和测试方法
+
+**强烈建议先阅读 `.env.example` 文件中的详细说明！**
+
 #### 🔐 必填配置项
 
 打开 `.env` 文件，您需要填写以下**必填项**：
@@ -804,10 +812,15 @@ cp .env.example .env
 
 ### ⚙️ 配置YApi连接信息
 
+📖 **重要**: 在编辑 `.env` 文件之前，请先查看 `.env.example` 文件，它包含了**完整的配置指南**和获取方法！
+
 编辑 `.env` 文件，填写您的YApi信息：
 
 ```bash
-# 使用任意编辑器打开配置文件
+# 首先查看详细配置指南
+cat .env.example
+
+# 然后使用任意编辑器打开配置文件
 code .env        # VS Code
 vim .env         # Vim
 nano .env        # Nano
@@ -903,9 +916,10 @@ pnpm run build
 ### 🎯 配置检查清单
 
 - [ ] 已克隆项目并安装依赖
-- [ ] 已创建 `.env` 文件
+- [ ] **已仔细阅读 `.env.example` 文件的详细配置指南** 📋
+- [ ] 已创建 `.env` 文件 (`cp .env.example .env`)
 - [ ] 已配置 `YAPI_BASE_URL`（YApi服务器地址）
-- [ ] 已配置 `YAPI_TOKEN`（Cookie或Token）
+- [ ] 已配置 `YAPI_TOKEN`（Cookie或Token，按 `.env.example` 指南获取）
 - [ ] 已构建项目 (`pnpm run build`)
 - [ ] 已启动服务 (`./start-mcp.sh start`)
 - [ ] 已配置AI编辑器的MCP连接
