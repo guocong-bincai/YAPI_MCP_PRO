@@ -6,12 +6,158 @@
 
 一个功能强大的 Model Context Protocol (MCP) 服务器，专为 YApi 接口管理平台设计。支持在 Cursor、Claude Desktop 等 AI 编辑器中直接操作 YApi，提供完整的接口生命周期管理功能。
 
+<div align="center">
+
+### 🚀 想要立即开始？
+
+**只需要2样东西：**
+1. 📍 您的YApi服务器地址
+2. 🍪 浏览器中的Cookie
+
+**⏱️ 配置时间：不到5分钟**
+
+[👉 点击这里开始配置](#-5分钟快速开始)
+
+</div>
+
+## ⚡ 5分钟快速开始
+
+> 🎯 **推荐方式**：使用NPM包的stdio模式，无需本地构建，开箱即用！
+> 
+> 📦 **自动更新**：使用 `npx -y yapi-mcp-pro` 确保总是使用最新版本
+> 
+> 🔒 **安全便捷**：Cookie认证自动发现所有项目，配置简单
+
+### 🎯 第一步：获取YApi认证信息
+
+#### 1. 获取YApi服务器地址
+从浏览器地址栏复制您的YApi服务器地址，例如：`http://your-yapi-server.com`
+
+#### 2. 获取Cookie认证信息（推荐方式）
+
+1. **登录YApi**: 在浏览器中正常登录您的YApi系统
+2. **打开开发者工具**: 按 `F12` 或右键选择"检查"
+3. **切换到Network面板**: 点击"Network"（网络）标签
+4. **触发网络请求**: 在YApi页面中随便点击一个功能（如刷新页面）
+5. **查看请求详情**: 点击任意一个网络请求（如下图红框所示）
+6. **找到Cookie字段**: 在右侧面板中找到"Request Headers"
+7. **复制Cookie值**: 找到"Cookie"字段，复制完整的Cookie值（如下图红框所示）
+
+![Cookie获取示例](images/cookie-example.png)
+
+> 💡 **重要提示**：
+> - Cookie必须包含 `_yapi_token` 和 `_yapi_uid` 两个关键字段
+> - 完整格式如：`_yapi_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; _yapi_uid=1413; 其他cookie值`
+> - 请复制完整的Cookie字符串，不要遗漏任何部分
+
+**🔍 Cookie内容示例**：
+```
+_yapi_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...(您的完整token); _yapi_uid=您的用户ID; keep-alive
+```
+
+### 🔧 第二步：配置Cursor
+
+#### 方式一：项目级配置（推荐）
+
+**步骤**：
+1. 在您的项目根目录创建 `.cursor` 文件夹（如果不存在）
+2. 在 `.cursor` 文件夹中创建 `mcp.json` 文件
+3. 复制以下配置内容到文件中：
+
+**💻 终端快速创建**：
+```bash
+# 创建目录和文件
+mkdir -p .cursor
+touch .cursor/mcp.json
+
+# 然后编辑文件内容
+```
+
+```json
+{
+  "mcpServers": {
+    "yapi-mcp-pro": {
+      "command": "npx",
+      "args": ["-y", "yapi-mcp-pro"],
+      "env": {
+        "YAPI_BASE_URL": "http://your-yapi-server.com",
+        "YAPI_TOKEN": "_yapi_token=您的真实token; _yapi_uid=您的用户ID",
+        "NODE_ENV": "cli"
+      }
+    }
+  }
+}
+```
+
+**📝 配置示例**（请替换为您的真实信息）：
+```json
+{
+  "mcpServers": {
+    "yapi-mcp-pro": {
+      "command": "npx",
+      "args": ["-y", "yapi-mcp-pro"],
+      "env": {
+        "YAPI_BASE_URL": "http://your-yapi-server.com",
+        "YAPI_TOKEN": "_yapi_token=您的真实token值; _yapi_uid=您的用户ID",
+        "NODE_ENV": "cli"
+      }
+    }
+  }
+}
+```
+
+#### 方式二：全局配置
+
+编辑Cursor全局配置文件：
+- **macOS**: `~/Library/Application Support/Cursor/User/settings.json`
+- **Windows**: `%APPDATA%\Cursor\User\settings.json`
+- **Linux**: `~/.config/Cursor/User/settings.json`
+
+添加相同的配置内容。
+
+### 🚀 第三步：开始使用
+
+1. **重启Cursor** - 让MCP配置生效
+2. **测试连接** - 在Cursor中输入以下命令测试：
+
+```
+请获取我的YApi用户信息
+请列出所有YApi项目
+请搜索用户相关的接口
+```
+
+3. **开始管理API** - 现在您可以通过AI助手管理YApi接口了！
+
+### 🆘 快速问题解决
+
+#### ❓ 提示"与YApi服务器通信失败"？
+- 检查 `YAPI_BASE_URL` 是否正确
+- 确保网络能访问YApi服务器
+- 验证YApi服务器是否正常运行
+
+#### ❓ 提示"请登录"或"认证失败"？
+- 重新获取Cookie，确保包含 `_yapi_token` 和 `_yapi_uid`
+- 检查Cookie是否完整，没有被截断
+- 确认YApi登录状态是否有效
+
+#### ❓ Cursor中看不到MCP工具？
+- 确认已重启Cursor
+- 检查配置文件路径和格式是否正确
+- 查看Cursor的MCP连接状态
+
+#### ❓ 需要更多帮助？
+- 查看 [详细配置指南](#-详细配置指南)
+- 查看 [故障排除](#-故障排除) 章节
+- 提交 [GitHub Issue](https://github.com/guocong-bincai/YAPI_MCP_PRO/issues)
+
+---
+
 ## 📋 目录
 
+- [⚡ 5分钟快速开始](#-5分钟快速开始) - **推荐先看这里**
 - [✨ 核心特性](#-核心特性)
 - [🎯 支持的AI编辑器](#-支持的ai编辑器)
-- [🚀 快速开始](#-快速开始)
-- [🔧 配置指南](#-配置指南)
+- [🔧 详细配置指南](#-详细配置指南)
 - [📚 MCP工具详解](#-mcp工具详解)
 - [💡 使用示例](#-使用示例)
 - [🛠️ 项目管理](#️-项目管理)
@@ -55,7 +201,7 @@
 | **VS Code** | 🔄 开发中 | 插件形式 |
 | **其他支持MCP的工具** | ✅ 理论支持 | 标准MCP协议 |
 
-## 🚀 快速开始
+## 🔧 详细配置指南
 
 ### 1. 环境要求
 
