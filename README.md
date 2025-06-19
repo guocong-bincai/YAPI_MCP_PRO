@@ -65,10 +65,22 @@
 
 ### 2. 安装部署
 
+#### 方式一：npm安装（推荐）
+
+```bash
+# 全局安装
+npm install -g yapi-mcp
+
+# 或使用pnpm
+pnpm add -g yapi-mcp
+```
+
+#### 方式二：源码安装
+
 ```bash
 # 克隆项目
-git clone git@github.com:guocong-bincai/YAPI_MCP_PRO.git
-cd YAPI_MCP_PRO
+git clone https://github.com/your-username/yapi-mcp.git
+cd yapi-mcp
 
 # 安装依赖
 npm install
@@ -151,10 +163,10 @@ YAPI_TOKEN=_yapi_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; _yapi_uid=1234; 
 ```env
 # Token认证示例
 # 格式：项目ID:项目Token,项目ID:项目Token
-YAPI_TOKEN=123:abc123token,456:def456token
+YAPI_TOKEN=PROJECT_ID_1:your_project_token_1,PROJECT_ID_2:your_project_token_2
 
 # 单个项目示例
-YAPI_TOKEN=123:abc123token
+YAPI_TOKEN=PROJECT_ID:your_project_token
 ```
 
 #### 📋 完整配置示例
@@ -175,7 +187,7 @@ YAPI_CACHE_TTL=10
 YAPI_LOG_LEVEL=info
 
 # === 高级配置（可选）===
-# YAPI_GROUP_ID=1557              # 默认分组ID（创建项目时使用）
+# YAPI_GROUP_ID=YOUR_GROUP_ID      # 默认分组ID（创建项目时使用）
 # YAPI_ENABLE_CACHE=true          # 是否启用缓存，默认true
 ```
 
@@ -206,7 +218,7 @@ npm run dev
 ```env
 # Cookie认证配置
 YAPI_BASE_URL=http://your-yapi-server.com
-YAPI_TOKEN=_yapi_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; _yapi_uid=1413
+YAPI_TOKEN=_yapi_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; _yapi_uid=YOUR_USER_ID
 ```
 
 #### 🔑 Token认证
@@ -221,7 +233,7 @@ YAPI_TOKEN=_yapi_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; _yapi_uid=1413
 ```env
 # Token认证配置
 YAPI_BASE_URL=http://your-yapi-server.com
-YAPI_TOKEN=654:b988d9c0ac6ffc500085,123:another_token_here
+YAPI_TOKEN=PROJECT_ID:YOUR_PROJECT_TOKEN,ANOTHER_PROJECT_ID:ANOTHER_TOKEN
 ```
 
 ### 完整配置参数
@@ -239,16 +251,85 @@ YAPI_CACHE_TTL=10                            # 缓存时间（分钟）
 YAPI_LOG_LEVEL=info                          # 日志级别
 
 # === 可选配置 ===
-YAPI_GROUP_ID=1557                           # 默认分组ID（创建项目时使用）
+YAPI_GROUP_ID=YOUR_GROUP_ID                  # 默认分组ID（创建项目时使用）
 ```
 
-### Cursor配置
+### 🔗 AI编辑器MCP配置
 
-**配置文件位置**: 
-- macOS: `~/Library/Application Support/Cursor/User/settings.json`
-- Windows: `%APPDATA%\Cursor\User\settings.json`
-- Linux: `~/.config/Cursor/User/settings.json`
+YAPI MCP PRO 支持多种MCP连接方式，满足不同使用场景的需求。
 
+#### 🎯 Cursor配置
+
+##### 配置文件位置
+- **项目级配置**（推荐）: `.cursor/mcp.json`
+- **全局配置**: 
+  - macOS: `~/Library/Application Support/Cursor/User/settings.json`
+  - Windows: `%APPDATA%\Cursor\User\settings.json`
+  - Linux: `~/.config/Cursor/User/settings.json`
+
+##### 🚀 方式一：NPM包模式（推荐）⭐
+
+**优势**: 
+- ✅ 自动下载最新版本，无需本地构建
+- ✅ 配置简单，开箱即用
+- ✅ 支持多项目，配置灵活
+- ✅ 自动依赖管理
+
+**项目级配置** `.cursor/mcp.json`:
+```json
+{
+  "mcpServers": {
+    "yapi-mcp-pro": {
+      "command": "npx",
+      "args": ["-y", "yapi-mcp-pro"],
+      "env": {
+        "YAPI_BASE_URL": "http://your-yapi-server.com",
+        "YAPI_TOKEN": "_yapi_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; _yapi_uid=YOUR_USER_ID",
+        "NODE_ENV": "cli",
+        "YAPI_LOG_LEVEL": "info",
+        "YAPI_CACHE_TTL": "10"
+      }
+    }
+  }
+}
+```
+
+**全局配置** `settings.json`:
+```json
+{
+  "mcpServers": {
+    "yapi-mcp-pro": {
+      "command": "npx",
+      "args": ["-y", "yapi-mcp-pro"],
+      "env": {
+        "YAPI_BASE_URL": "http://your-yapi-server.com",
+        "YAPI_TOKEN": "your_cookie_or_token_here",
+        "NODE_ENV": "cli"
+      }
+    }
+  }
+}
+```
+
+##### 🔧 方式二：本地服务器模式（HTTP/SSE）
+
+**优势**:
+- ✅ 性能更好，减少启动时间
+- ✅ 支持实时数据推送
+- ✅ 便于调试和开发
+- ✅ 支持多客户端共享
+
+**步骤**:
+1. 启动本地MCP服务器
+```bash
+# 启动服务
+./start-mcp.sh start
+
+# 检查状态
+./start-mcp.sh status
+```
+
+2. 配置Cursor连接
 ```json
 {
   "mcpServers": {
@@ -257,6 +338,100 @@ YAPI_GROUP_ID=1557                           # 默认分组ID（创建项目时�
     }
   }
 }
+```
+
+##### 🛠️ 方式三：本地构建模式
+
+**适用场景**: 需要自定义修改源码
+
+```json
+{
+  "mcpServers": {
+    "yapi-mcp-pro": {
+      "command": "node",
+      "args": ["/path/to/yapi-mcp/dist/index.js"],
+      "env": {
+        "YAPI_BASE_URL": "http://your-yapi-server.com",
+        "YAPI_TOKEN": "your_token"
+      }
+    }
+  }
+}
+```
+
+#### 🖥️ Claude Desktop配置
+
+编辑 `claude_desktop_config.json`:
+
+##### NPM包模式（推荐）
+```json
+{
+  "mcpServers": {
+    "yapi-mcp-pro": {
+      "command": "npx",
+      "args": ["-y", "yapi-mcp-pro"],
+      "env": {
+        "YAPI_BASE_URL": "http://your-yapi-server.com",
+        "YAPI_TOKEN": "your_cookie_or_token",
+        "NODE_ENV": "cli"
+      }
+    }
+  }
+}
+```
+
+##### 本地构建模式
+```json
+{
+  "mcpServers": {
+    "yapi-mcp-pro": {
+      "command": "node",
+      "args": ["/path/to/yapi-mcp/dist/index.js"],
+      "env": {
+        "YAPI_BASE_URL": "http://your-yapi-server.com",
+        "YAPI_TOKEN": "your_token"
+      }
+    }
+  }
+}
+```
+
+#### 🔄 其他MCP客户端
+
+任何支持MCP协议的工具都可以连接，只需按照对应工具的MCP配置格式进行配置。
+
+#### 📊 配置方式对比
+
+| 配置方式 | 优势 | 缺点 | 适用场景 |
+|----------|------|------|----------|
+| **NPM包模式** | 🟢 配置简单<br/>🟢 自动更新<br/>🟢 无需构建 | 🔴 首次启动稍慢 | 🎯 **推荐**，适合大多数用户 |
+| **HTTP/SSE模式** | 🟢 性能最佳<br/>🟢 支持实时推送<br/>🟢 多客户端共享 | 🔴 需要启动服务<br/>🔴 占用端口 | 🎯 重度使用，多项目协作 |
+| **本地构建模式** | 🟢 完全控制<br/>🟢 可自定义修改 | 🔴 需要构建<br/>🔴 维护成本高 | 🎯 开发者，需要定制功能 |
+
+#### ⚙️ 环境变量配置详解
+
+| 环境变量 | 说明 | 默认值 | 示例 |
+|----------|------|--------|------|
+| `YAPI_BASE_URL` | YApi服务器地址 | 无 | `http://yapi.example.com` |
+| `YAPI_TOKEN` | 认证Token或Cookie | 无 | `_yapi_token=xxx; _yapi_uid=123` |
+| `NODE_ENV` | 运行环境 | `production` | `cli`, `development` |
+| `YAPI_LOG_LEVEL` | 日志级别 | `info` | `debug`, `warn`, `error` |
+| `YAPI_CACHE_TTL` | 缓存时效（分钟） | `10` | `30` |
+| `YAPI_ENABLE_CACHE` | 是否启用缓存 | `true` | `false` |
+
+#### 🔧 配置验证
+
+配置完成后，在AI编辑器中测试连接：
+
+```
+# 测试连接
+请获取我的YApi用户信息
+
+# 测试项目列表
+请列出所有YApi项目
+
+# 测试接口搜索
+请搜索用户相关的接口
 ```
 
 ## 📚 MCP工具详解
@@ -462,10 +637,10 @@ YAPI MCP PRO 提供 **19个专业工具**，涵盖YApi的完整功能生态：
 请搜索包含"登录"的接口
 
 # 获取特定接口详情
-请获取项目654中接口ID为123的详细信息
+请获取项目YOUR_PROJECT_ID中接口ID为123的详细信息
 
 # 创建新接口
-请在项目654的"用户管理"分类中创建一个用户注册接口：
+请在项目YOUR_PROJECT_ID的"用户管理"分类中创建一个用户注册接口：
 - 路径：/api/user/register
 - 方法：POST
 - 描述：用户注册接口
@@ -478,7 +653,7 @@ YAPI MCP PRO 提供 **19个专业工具**，涵盖YApi的完整功能生态：
 请创建一个名为"电商系统"的项目，基础路径为"/api"
 
 # 为项目创建分类结构
-请为项目654创建以下分类：
+请为项目YOUR_PROJECT_ID创建以下分类：
 1. 用户管理
 2. 商品管理  
 3. 订单管理
@@ -489,13 +664,13 @@ YAPI MCP PRO 提供 **19个专业工具**，涵盖YApi的完整功能生态：
 
 ```
 # 批量创建接口
-请为用户模块创建以下接口，都放在项目654的用户管理分类中：
+请为用户模块创建以下接口，都放在项目YOUR_PROJECT_ID的用户管理分类中：
 1. GET /api/user/profile - 获取用户信息
 2. PUT /api/user/profile - 更新用户信息
 3. DELETE /api/user/account - 删除账户
 
 # 导入Swagger文档
-请将以下Swagger数据导入到项目654的API分类中：
+请将以下Swagger数据导入到项目YOUR_PROJECT_ID的API分类中：
 [粘贴Swagger JSON]
 ```
 
@@ -503,10 +678,10 @@ YAPI MCP PRO 提供 **19个专业工具**，涵盖YApi的完整功能生态：
 
 ```
 # 创建测试集合
-请为项目654创建一个名为"用户模块测试"的测试集合
+请为项目YOUR_PROJECT_ID创建一个名为"用户模块测试"的测试集合
 
 # 运行接口测试
-请测试项目654中接口ID为123的接口，使用测试环境
+请测试项目YOUR_PROJECT_ID中接口ID为123的接口，使用测试环境
 ```
 
 ## 🛠️ 项目管理
@@ -678,7 +853,7 @@ const interfaces = [
 for (const interfaceData of interfaces) {
   await yapiService.saveInterface({
     ...interfaceData,
-    project_id: "654",
+    project_id: "YOUR_PROJECT_ID",
     catid: "123"
   });
 }
@@ -867,15 +1042,46 @@ pnpm run build
 
 ### 🔗 配置AI编辑器
 
-#### Cursor配置
-编辑 Cursor 的 `settings.json` 文件：
+#### 🎯 Cursor配置（多种方式）
 
-**配置文件位置**：
-- macOS: `~/Library/Application Support/Cursor/User/settings.json`
-- Windows: `%APPDATA%\Cursor\User\settings.json`
-- Linux: `~/.config/Cursor/User/settings.json`
+##### 配置文件位置
+- **项目级配置**（推荐）: `.cursor/mcp.json`
+- **全局配置**: `~/.cursor/mcp.json`
 
-**添加配置**：
+##### 🚀 方式一：NPM包模式（推荐）⭐
+
+**优势**: 自动下载最新版本，无需本地构建，配置简单
+
+**项目级配置** `.cursor/mcp.json`:
+```json
+{
+  "mcpServers": {
+    "yapi-mcp-pro": {
+      "command": "npx",
+      "args": ["-y", "yapi-mcp-pro"],
+      "env": {
+        "YAPI_BASE_URL": "http://your-yapi-server.com",
+        "YAPI_TOKEN": "_yapi_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; _yapi_uid=YOUR_USER_ID",
+        "NODE_ENV": "cli",
+        "YAPI_LOG_LEVEL": "info",
+        "YAPI_CACHE_TTL": "10"
+      }
+    }
+  }
+}
+```
+
+##### 🔧 方式二：本地服务器模式（HTTP/SSE）
+
+**优势**: 性能更好，支持实时推送，多客户端共享
+
+**步骤**:
+1. 启动本地MCP服务器
+```bash
+./start-mcp.sh start
+```
+
+2. 配置Cursor连接
 ```json
 {
   "mcpServers": {
@@ -886,8 +1092,10 @@ pnpm run build
 }
 ```
 
-#### Claude Desktop配置
-编辑 `claude_desktop_config.json`：
+##### 🛠️ 方式三：本地构建模式
+
+**适用场景**: 需要自定义修改源码
+
 ```json
 {
   "mcpServers": {
@@ -902,6 +1110,50 @@ pnpm run build
   }
 }
 ```
+
+#### 🖥️ Claude Desktop配置
+
+##### NPM包模式（推荐）
+编辑 `claude_desktop_config.json`：
+```json
+{
+  "mcpServers": {
+    "yapi-mcp-pro": {
+      "command": "npx",
+      "args": ["-y", "yapi-mcp-pro"],
+      "env": {
+        "YAPI_BASE_URL": "http://your-yapi-server.com",
+        "YAPI_TOKEN": "your_cookie_or_token",
+        "NODE_ENV": "cli"
+      }
+    }
+  }
+}
+```
+
+##### 本地构建模式
+```json
+{
+  "mcpServers": {
+    "yapi-mcp-pro": {
+      "command": "node",
+      "args": ["/path/to/YAPI_MCP_PRO/dist/index.js"],
+      "env": {
+        "YAPI_BASE_URL": "http://your-yapi-server.com",
+        "YAPI_TOKEN": "your_token"
+      }
+    }
+  }
+}
+```
+
+#### 📊 配置方式对比
+
+| 配置方式 | 优势 | 缺点 | 适用场景 |
+|----------|------|------|----------|
+| **NPM包模式** | 🟢 配置简单<br/>🟢 自动更新<br/>🟢 无需构建 | 🔴 首次启动稍慢 | 🎯 **推荐**，适合大多数用户 |
+| **HTTP/SSE模式** | 🟢 性能最佳<br/>🟢 支持实时推送<br/>🟢 多客户端共享 | 🔴 需要启动服务<br/>🔴 占用端口 | 🎯 重度使用，多项目协作 |
+| **本地构建模式** | 🟢 完全控制<br/>🟢 可自定义修改 | 🔴 需要构建<br/>🔴 维护成本高 | 🎯 开发者，需要定制功能 |
 
 ### ✅ 验证安装
 
@@ -970,13 +1222,68 @@ A:
 
 ## ✨ 功能特性
 
-- **🔐 多种认证方式**: 支持Token参数认证和Cookie认证
-- **🚀 智能项目发现**: 自动发现用户有权限的项目
-- **📋 完整接口管理**: 查看、搜索、创建、更新、删除接口
-- **🏷️ 分类管理**: 创建、更新、删除接口分类
-- **🔍 强大搜索**: 支持项目、接口名称、路径的模糊搜索
-- **🧪 测试集合**: 管理和运行接口测试
-- **📄 数据导入导出**: 支持Swagger导入和多格式导出
-- **⚡ 实时数据**: 智能缓存机制，确保数据时效性
+### 🔗 多种MCP连接方式
+- **📦 NPM包模式**: 使用 `npx yapi-mcp-pro` 自动下载最新版本（推荐）
+- **🌐 HTTP/SSE模式**: 本地服务器模式，支持实时数据推送
+- **🛠️ 本地构建模式**: 支持源码自定义修改和调试
+
+### 🔐 灵活的认证机制
+- **🍪 Cookie认证**: 自动发现所有有权限的项目，配置简单
+- **🔑 Token认证**: 项目级Token认证，长期有效，更安全
+- **👥 多项目支持**: 同时管理多个YApi项目
+
+### 📋 完整的接口生命周期管理
+- **接口CRUD**: 创建、读取、更新、删除接口
+- **🔍 智能搜索**: 多维度搜索接口（名称、路径、项目）
+- **📁 分类管理**: 完整的接口分类生命周期管理
+- **🧪 测试集合**: 管理和运行接口测试用例
+
+### 🚀 高性能与智能缓存
+- **⚡ 智能缓存**: 多层缓存机制，提升响应速度
+- **🔄 实时同步**: 与YApi服务器实时同步数据
 - **🎯 灵活缓存控制**: 支持强制刷新和完全禁用缓存
+- **📊 性能监控**: 详细的操作日志和性能统计
+
+### 🛠️ 开发者友好
+- **📄 数据导入导出**: 支持Swagger导入和多格式导出
+- **🔧 环境变量配置**: 灵活的配置管理
+- **🐛 详细日志**: 完整的操作日志和错误追踪
+- **🎨 TypeScript支持**: 完整的类型定义和智能提示
+
+---
+
+## 🎊 总结
+
+### ✅ **YAPI MCP PRO 现在支持多种连接方式**
+
+| 连接方式 | 特点 | 适用场景 |
+|----------|------|----------|
+| **📦 NPM包模式** | 🚀 开箱即用，自动更新 | 🎯 **推荐给所有用户** |
+| **🌐 HTTP/SSE模式** | ⚡ 高性能，实时推送 | 🎯 重度使用，多项目协作 |
+| **🛠️ 本地构建模式** | 🔧 完全控制，可定制 | 🎯 开发者，需要自定义功能 |
+
+### 🚀 **快速开始推荐路径**
+
+1. **新用户** → 选择 **NPM包模式**，配置简单，开箱即用
+2. **重度用户** → 选择 **HTTP/SSE模式**，性能最佳，支持实时推送  
+3. **开发者** → 选择 **本地构建模式**，可以自定义修改源码
+
+### 💡 **配置要点**
+- **认证方式**: Cookie认证最简单，Token认证最安全
+- **配置级别**: 项目级配置优先，全局配置备用
+- **环境变量**: 支持丰富的环境变量配置
+- **缓存机制**: 智能缓存提升性能，支持强制刷新
+
+### 🎯 **立即开始**
+选择适合您的连接方式，按照对应的配置指南进行设置，几分钟内即可开始使用强大的YApi AI助手！
+
+### 🔗 **相关链接**
+- 📦 [NPM包地址](https://www.npmjs.com/package/yapi-mcp-pro)
+- 📚 [详细配置指南](CURSOR-MCP-SETUP.md)
+- 🐛 [问题反馈](https://github.com/guocong-bincai/YAPI_MCP_PRO/issues)
+- 💬 [功能建议](https://github.com/guocong-bincai/YAPI_MCP_PRO/discussions)
+
+---
+
+**🎉 享受您的YApi AI助手之旅！**
 

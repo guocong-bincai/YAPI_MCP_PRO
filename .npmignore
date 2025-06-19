@@ -1,0 +1,68 @@
+# Source files
+src/
+*.ts
+!dist/
+
+# Development files
+.env*
+.env.example
+.cursor/
+.vscode/
+*.log
+yapi-mcp.pid
+*.pid
+
+# Build tools
+tsconfig.json
+tsc-alias.json
+.eslintrc.*
+.prettierrc.*
+
+# Documentation (except README.md)
+docs/
+doc/
+*.md
+!README.md
+
+# Test files
+test/
+tests/
+*.test.*
+*.spec.*
+jest.config.*
+
+# Development dependencies
+node_modules/
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Scripts
+start-mcp.sh
+*.sh
+
+# Project specific
+PROJECT-RULES.md
+YAPI-MCP-CURSOR-RULES.md
+USAGE-GUIDE.md
+QUICK-REFERENCE.md
+images/
+
+# Runtime and cache files
+.yapi-cache/
+*.cache 

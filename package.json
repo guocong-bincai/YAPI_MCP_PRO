@@ -1,14 +1,15 @@
 {
-  "name": "yapi-mcp",
-  "version": "0.1.4",
-  "description": "Model Context Protocol server for yapi integration",
+  "name": "yapi-mcp-pro",
+  "version": "0.2.1",
+  "description": "Model Context Protocol server for YApi integration - Professional YApi interface management tool",
   "main": "dist/index.js",
-  "bin": {
-    "figma-developer-mcp": "./dist/cli.js"
-  },
+      "bin": {
+      "yapi-mcp-pro": "./dist/cli.js"
+    },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc && tsc-alias",
@@ -21,23 +22,33 @@
     "lint": "eslint . --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "inspect": "pnpx @modelcontextprotocol/inspector",
-    "prepare": "pnpm run build && chmod +x ./dist/cli.js",
-    "pub:release": "pnpm build && npm publish"
+    "prepare": "npm run build && chmod +x ./dist/cli.js",
+    "prepublishOnly": "npm run build",
+    "pub:release": "npm run build && npm publish"
   },
   "engines": {
-    "node": "^20.17.0"
+    "node": ">=16.0.0"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/GLips/Figma-Context-MCP.git"
+    "url": "https://github.com/your-username/yapi-mcp.git"
   },
   "keywords": [
     "yapi",
     "mcp",
-    "typescript"
+    "model-context-protocol",
+    "api-management",
+    "typescript",
+    "cursor",
+    "claude-desktop",
+    "ai-tools"
   ],
-  "author": "",
+  "author": "Your Name <your.email@example.com>",
   "license": "MIT",
+  "homepage": "https://github.com/your-username/yapi-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/your-username/yapi-mcp/issues"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.6.0",
     "@types/yargs": "^17.0.33",

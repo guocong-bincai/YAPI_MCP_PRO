@@ -171,7 +171,7 @@ export class YApiService {
       
       // 方法2：尝试使用配置的或固定的group_id
       const configuredGroupId = process.env.YAPI_GROUP_ID;
-      const knownGroupIds = configuredGroupId ? [parseInt(configuredGroupId)] : [1557]; // 从用户的网络请求中看到的
+      const knownGroupIds = configuredGroupId ? [parseInt(configuredGroupId)] : [1]; // 默认尝试组ID 1
       const projects: Array<{ _id: number; name: string }> = [];
       
       for (const groupId of knownGroupIds) {

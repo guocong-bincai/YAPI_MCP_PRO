@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "yapi-mcp-pro": {
+      "command": "npx",
+      "args": ["-y", "yapi-mcp-pro"],
+      "env": {
+        "YAPI_BASE_URL": "http://your-yapi-server.com",
+        "YAPI_TOKEN": "_yapi_token=YOUR_REAL_TOKEN_HERE; _yapi_uid=YOUR_USER_ID",
+        "NODE_ENV": "cli",
+        "YAPI_LOG_LEVEL": "info",
+        "YAPI_CACHE_TTL": "10",
+        "YAPI_ENABLE_CACHE": "true"
+      }
+    }
+  }
+} 
