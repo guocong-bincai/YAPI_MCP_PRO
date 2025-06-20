@@ -1,0 +1,43 @@
+name: yapi-mcp-pro
+description: Professional YApi interface management tool - Complete API lifecycle management
+version: 0.2.1
+author: guocong-bincai
+license: MIT
+
+# MCP Server Configuration
+mcp:
+  transport: stdio
+  capabilities:
+    - tools
+    - resources
+    - prompts
+
+# Runtime Configuration  
+runtime:
+  type: node
+  version: ">=16.0.0"
+  command: node
+  args: ["dist/index.js"]
+  
+# Environment Variables (optional)
+environment:
+  NODE_ENV: production
+  YAPI_BASE_URL: ""
+  YAPI_TOKEN: ""
+
+# Categories
+categories:
+  - api-management
+  - interface-tools
+  - development-tools
+  - ai-workflow-integration
+
+# Keywords for discovery
+keywords:
+  - yapi
+  - api
+  - interface
+  - management
+  - mcp
+  - cursor
+  - claude 

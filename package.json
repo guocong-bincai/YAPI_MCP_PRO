@@ -31,7 +31,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/yapi-mcp.git"
+    "url": "https://github.com/guocong-bincai/YAPI_MCP_PRO.git"
   },
   "keywords": [
     "yapi",
@@ -41,13 +41,15 @@
     "typescript",
     "cursor",
     "claude-desktop",
-    "ai-tools"
+    "ai-tools",
+    "interface-management",
+    "api-documentation"
   ],
-  "author": "Your Name <your.email@example.com>",
+  "author": "guocong-bincai <your.email@example.com>",
   "license": "MIT",
-  "homepage": "https://github.com/your-username/yapi-mcp#readme",
+  "homepage": "https://github.com/guocong-bincai/YAPI_MCP_PRO#readme",
   "bugs": {
-    "url": "https://github.com/your-username/yapi-mcp/issues"
+    "url": "https://github.com/guocong-bincai/YAPI_MCP_PRO/issues"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.6.0",

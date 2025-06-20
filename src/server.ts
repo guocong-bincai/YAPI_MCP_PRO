@@ -17,14 +17,17 @@ export class YapiMcpServer {
   private sseTransport: SSEServerTransport | null = null;
   private readonly isStdioMode: boolean;
 
-  constructor(yapiBaseUrl: string, yapiToken: string, yapiLogLevel: string = "info", yapiCacheTTL: number = 10, enableCache: boolean = true) {
+  constructor(yapiBaseUrl: string, yapiToken: string, yapiLogLevel: string = "info", yapiCacheTTL: number = 10, enableCache: boolean = true, delayedInit: boolean = false) {
     this.logger = new Logger("YapiMCP", yapiLogLevel);
     this.yapiService = new YApiService(yapiBaseUrl, yapiToken, yapiLogLevel, enableCache);
     this.projectInfoCache = new ProjectInfoCache(yapiCacheTTL);
     // 判断是否为stdio模式
     this.isStdioMode = process.env.NODE_ENV === "cli" || process.argv.includes("--stdio");
     
-    this.logger.info(`YapiMcpServer初始化，日志级别: ${yapiLogLevel}, 缓存TTL: ${yapiCacheTTL}分钟`);
+    // 在Smithery模式下减少日志输出
+    if (!delayedInit) {
+      this.logger.info(`YapiMcpServer初始化，日志级别: ${yapiLogLevel}, 缓存TTL: ${yapiCacheTTL}分钟`);
+    }
     
     this.server = new McpServer({
       name: "Yapi MCP Server",
