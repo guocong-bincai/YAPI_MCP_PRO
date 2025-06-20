@@ -3,6 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-4.9+-blue.svg)](https://www.typescriptlang.org/)
+[![smithery badge](https://smithery.ai/badge/@guocong-bincai/yapi_mcp_pro)](https://smithery.ai/server/@guocong-bincai/yapi_mcp_pro)
 
 一个功能强大的 Model Context Protocol (MCP) 服务器，专为 YApi 接口管理平台设计。支持在 Cursor、Claude Desktop 等 AI 编辑器中直接操作 YApi，提供完整的接口生命周期管理功能。
 
@@ -110,7 +111,7 @@ touch .cursor/mcp.json
 
 编辑Cursor全局配置文件：
 - **macOS**: `~/Library/Application Support/Cursor/User/settings.json`
-- **Windows**: `%APPDATA%\Cursor\User\settings.json`
+- **Windows**: `%APPDATA%\Cursor\User/settings.json`
 - **Linux**: `~/.config/Cursor/User/settings.json`
 
 添加相同的配置内容。
@@ -410,7 +411,7 @@ YAPI MCP PRO 支持多种MCP连接方式，满足不同使用场景的需求。
 - **项目级配置**（推荐）: `.cursor/mcp.json`
 - **全局配置**: 
   - macOS: `~/Library/Application Support/Cursor/User/settings.json`
-  - Windows: `%APPDATA%\Cursor\User\settings.json`
+  - Windows: `%APPDATA%\Cursor\User/settings.json`
   - Linux: `~/.config/Cursor/User/settings.json`
 
 ##### 🚀 方式一：NPM包模式（推荐）⭐
