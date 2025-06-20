@@ -1,0 +1,39 @@
+# Smithery configuration file: https://smithery.ai/docs/build/project-config
+
+startCommand:
+  type: stdio
+  commandFunction:
+    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
+    |-
+    (config) => ({ command: 'node', args: ['dist/index.js', '--stdio'], env: { YAPI_BASE_URL: config.yapiBaseUrl, YAPI_TOKEN: config.yapiToken, NODE_ENV: 'cli', YAPI_LOG_LEVEL: config.yapiLogLevel, YAPI_CACHE_TTL: config.yapiCacheTTL.toString(), YAPI_ENABLE_CACHE: config.yapiEnableCache.toString() } })
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP.
+    type: object
+    required:
+      - yapiBaseUrl
+      - yapiToken
+    properties:
+      yapiBaseUrl:
+        type: string
+        description: YApi server base URL
+      yapiToken:
+        type: string
+        description: Authentication token or cookie for YApi
+      yapiLogLevel:
+        type: string
+        default: info
+        description: Log level (debug, info, warn, error)
+      yapiCacheTTL:
+        type: number
+        default: 10
+        description: Cache time-to-live in minutes
+      yapiEnableCache:
+        type: boolean
+        default: true
+        description: Enable or disable caching
+  exampleConfig:
+    yapiBaseUrl: http://your-yapi-server.com
+    yapiToken: _yapi_token=xxxx; _yapi_uid=1234
+    yapiLogLevel: info
+    yapiCacheTTL: 10
+    yapiEnableCache: true
