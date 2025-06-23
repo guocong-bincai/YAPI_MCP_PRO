@@ -6,6 +6,65 @@
 
 一个功能强大的 Model Context Protocol (MCP) 服务器，专为 YApi 接口管理平台设计。支持在 Cursor、Claude Desktop 等 AI 编辑器中直接操作 YApi，提供完整的接口生命周期管理功能。
 
+## 🚨 常见问题快速解决
+
+### ⚠️ 重要：NPM缓存问题（必看！）
+
+**如果您遇到连接问题，首先检查这个：**
+
+```bash
+# 1. 检查版本命令是否正常
+npx yapi-mcp-pro --version
+
+# 2. 如果上面命令没有正常输出版本号，执行清缓存：
+npm cache clean --force
+
+# 3. 然后重新测试
+npx yapi-mcp-pro --version
+```
+
+**🔍 判断标准**：
+- ✅ **正常**：显示版本号如 `0.2.1`
+- ❌ **异常**：显示错误信息、找不到命令、或者卡住不动
+
+> 💡 **为什么会出现这个问题？**
+> NPM缓存可能损坏或过期，导致无法正确下载或运行包。清理缓存可以解决大部分连接问题。
+
+### 🔧 快速故障排查清单
+
+| 检查项 | 正常状态 | 异常处理 |
+|--------|----------|----------|
+| **🔥 NPM包版本** | `npx yapi-mcp-pro --version` 有输出 | **必须执行**: `npm cache clean --force` |
+| **YApi服务可访问** | `curl -I {YAPI_URL}` 返回200 | 检查YApi服务状态、网络连接 |
+| **Token有效性** | 能正常访问YApi接口 | 重新获取Token或检查权限 |
+| **环境变量** | `YAPI_BASE_URL`和`YAPI_TOKEN`已设置 | 检查环境变量或配置文件 |
+
+### 🚦 Cursor状态灯说明
+
+| 状态 | 含义 | 解决方案 |
+|------|------|----------|
+| 🟢 **绿灯** | 连接正常 | 可以正常使用 |
+| 🔴 **红灯** | 连接失败 | 1. 先执行 `npm cache clean --force`<br>2. 检查配置文件<br>3. 验证YApi连接 |
+| 🟡 **黄灯** | 连接超时 | 检查网络、防火墙设置 |
+| ⚫ **无显示** | 配置错误 | 检查JSON语法、重新配置 |
+
+### 💊 一键修复脚本
+
+如果遇到问题，复制以下命令一键修复：
+
+```bash
+# 清理NPM缓存并重新安装
+npm cache clean --force && npx clear-npx-cache 2>/dev/null || true
+
+# 验证安装
+npx yapi-mcp-pro --version
+
+# 测试YApi连接（替换为您的实际地址）
+curl -I "http://your-yapi-server.com"
+```
+
+---
+
 <div align="center">
 
 ### 🚀 想要立即开始？
@@ -27,6 +86,16 @@
 > 📦 **自动更新**：使用 `npx -y yapi-mcp-pro` 确保总是使用最新版本
 > 
 > 🔒 **安全便捷**：Cookie认证自动发现所有项目，配置简单
+
+### 🚀 完全新手？3步搞定！
+
+**如果您是第一次接触，按这个顺序：**
+
+1. **📥 安装Node.js** → [点击查看详细安装指南](#-nodejs-完整安装指南新手必看)
+2. **🔧 配置Cursor** → [继续下面的配置步骤](#🔧-第二步配置cursor)  
+3. **🎉 开始使用** → [测试连接和使用](#🚀-第三步开始使用)
+
+> 💡 **已经有Node.js？** 直接从第2步开始！
 
 ### 🎯 第一步：获取YApi认证信息
 
@@ -149,6 +218,442 @@ touch .cursor/mcp.json
 - 查看 [详细配置指南](#-详细配置指南)
 - 查看 [故障排除](#-故障排除) 章节
 - 提交 [GitHub Issue](https://github.com/guocong-bincai/YAPI_MCP_PRO/issues)
+
+---
+
+## 🔧 环境要求与兼容性检查
+
+### 📋 最低系统要求
+
+在开始配置之前，请确保您的系统满足以下要求：
+
+| 要求项 | 最低版本 | 推荐版本 | 验证命令 |
+|--------|----------|----------|----------|
+| **Node.js** | 16.0.0+ | 18.0.0+ | `node --version` |
+| **npm** | 7.0.0+ | 9.0.0+ | `npm --version` |
+| **网络访问** | - | - | 能访问YApi服务器和NPM Registry |
+
+### 🚀 Node.js 完整安装指南（新手必看）
+
+> 💡 **如果您已经安装了Node.js，可以跳过此部分**
+> 
+> 检查是否已安装：在终端/命令提示符中输入 `node --version`
+> - 如果显示版本号（如 `v18.17.0`），说明已安装
+> - 如果提示 "command not found" 或类似错误，需要安装
+
+#### 🎯 方式一：官方安装器（推荐新手）
+
+**第一步：访问官网下载**
+
+1. 打开浏览器，访问 **[https://nodejs.org/](https://nodejs.org/)**
+2. 页面会自动识别您的操作系统
+3. 点击绿色的 **"Download Node.js (LTS)"** 按钮
+
+![Node.js官网下载](https://nodejs.org/static/images/logo.svg)
+
+**第二步：根据您的操作系统选择**
+
+| 操作系统 | 下载文件 | 安装方式 |
+|----------|----------|----------|
+| **Windows** | `node-v18.x.x-x64.msi` | 双击运行，按向导安装 |
+| **macOS** | `node-v18.x.x.pkg` | 双击运行，按向导安装 |
+| **Linux** | `node-v18.x.x-linux-x64.tar.xz` | 解压或使用包管理器 |
+
+**第三步：安装过程**
+
+**🪟 Windows 用户：**
+1. 双击下载的 `.msi` 文件
+2. 点击 "Next" 接受许可协议
+3. 选择安装路径（建议使用默认路径）
+4. **重要：确保勾选 "Add to PATH" 选项**
+5. 点击 "Install" 开始安装
+6. 安装完成后重启命令提示符
+
+**🍎 macOS 用户：**
+1. 双击下载的 `.pkg` 文件
+2. 按照安装向导提示操作
+3. 输入管理员密码（如果需要）
+4. 安装完成后重启终端
+
+**🐧 Linux 用户：**
+```bash
+# 下载并解压（以Ubuntu为例）
+wget https://nodejs.org/dist/v18.17.0/node-v18.17.0-linux-x64.tar.xz
+tar -xf node-v18.17.0-linux-x64.tar.xz
+
+# 移动到系统目录
+sudo mv node-v18.17.0-linux-x64 /opt/nodejs
+
+# 创建软链接
+sudo ln -s /opt/nodejs/bin/node /usr/local/bin/node
+sudo ln -s /opt/nodejs/bin/npm /usr/local/bin/npm
+sudo ln -s /opt/nodejs/bin/npx /usr/local/bin/npx
+```
+
+#### ⚡ 方式二：包管理器安装（适合有经验用户）
+
+**🪟 Windows (使用 Chocolatey):**
+```powershell
+# 首先安装Chocolatey (如果没有)
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+# 安装Node.js
+choco install nodejs
+
+# 验证安装
+node --version
+npm --version
+```
+
+**🍎 macOS (使用 Homebrew):**
+```bash
+# 首先安装Homebrew (如果没有)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# 安装Node.js
+brew install node
+
+# 验证安装
+node --version
+npm --version
+```
+
+**🐧 Linux (使用包管理器):**
+```bash
+# Ubuntu/Debian
+sudo apt update
+sudo apt install nodejs npm
+
+# CentOS/RHEL (使用dnf)
+sudo dnf install nodejs npm
+
+# CentOS/RHEL (使用yum)
+sudo yum install nodejs npm
+
+# Arch Linux
+sudo pacman -S nodejs npm
+
+# 验证安装
+node --version
+npm --version
+```
+
+#### 🔍 安装验证
+
+**安装完成后，请执行以下命令验证：**
+
+```bash
+# 检查Node.js版本（应显示 v16.0.0 或更高版本）
+node --version
+
+# 检查npm版本（应显示 7.0.0 或更高版本）
+npm --version
+
+# 检查npx是否可用
+npx --version
+
+# 测试npm连接（可选）
+npm ping
+```
+
+**✅ 成功安装的标志：**
+- `node --version` 显示版本号（如：`v18.17.0`）
+- `npm --version` 显示版本号（如：`9.6.7`）
+- `npx --version` 显示版本号（如：`9.6.7`）
+
+#### ⚠️ 常见安装问题
+
+**❌ "node: command not found"**
+- **Windows**: 重启命令提示符，或检查环境变量PATH
+- **macOS/Linux**: 重启终端，或手动添加到PATH：
+  ```bash
+  echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bashrc
+  source ~/.bashrc
+  ```
+
+**❌ 版本过低**
+```bash
+# 更新到最新版本
+npm install -g npm@latest
+
+# 或重新下载安装最新版Node.js
+```
+
+**❌ 权限问题**
+```bash
+# macOS/Linux: 修复npm权限
+sudo chown -R $(whoami) ~/.npm
+sudo chown -R $(whoami) /usr/local/lib/node_modules
+```
+
+**❌ 网络问题（中国用户）**
+```bash
+# 切换到国内镜像源
+npm config set registry https://registry.npmmirror.com
+
+# 验证镜像源
+npm config get registry
+```
+
+#### 🎉 安装成功后的建议配置
+
+```bash
+# 设置npm全局安装目录（避免权限问题）
+mkdir ~/.npm-global
+npm config set prefix '~/.npm-global'
+
+# 添加到环境变量（macOS/Linux）
+echo 'export PATH=~/.npm-global/bin:$PATH' >> ~/.profile
+source ~/.profile
+
+# Windows用户需要手动添加 %USERPROFILE%\.npm-global 到PATH环境变量
+```
+
+#### 🚀 验证YApi MCP Pro可用性
+
+**安装Node.js后，立即测试我们的工具：**
+
+```bash
+# 测试YApi MCP Pro是否可以正常运行
+npx -y yapi-mcp-pro --help
+
+# 如果看到帮助信息，说明环境配置成功！
+```
+
+**看到类似输出表示成功：**
+```
+选项：
+  --version            显示版本号
+  --yapi-base-url      YApi服务器基础URL
+  --yapi-token         YApi服务器授权Token
+  --help               显示帮助信息
+```
+
+### 🔍 环境检查脚本
+
+**一键检查所有环境要求**：
+
+```bash
+# Windows (PowerShell)
+echo "=== YApi MCP Pro 环境检查 ===" && echo "Node.js版本:" && node --version && echo "NPM版本:" && npm --version && echo "网络连通性:" && npm ping
+
+# macOS/Linux
+echo "=== YApi MCP Pro 环境检查 ===" && echo "Node.js版本:" && node --version && echo "NPM版本:" && npm --version && echo "测试NPM连接:" && npm ping
+
+# 检查NPX可用性
+npx --version
+```
+
+### ⚠️ 常见环境问题
+
+#### ❌ "node: command not found"
+**问题**: 系统未安装Node.js
+**解决方案**:
+- 访问 [nodejs.org](https://nodejs.org/) 下载安装最新LTS版本
+- 或使用包管理器：
+  ```bash
+  # macOS (使用Homebrew)
+  brew install node
+  
+  # Ubuntu/Debian
+  sudo apt update && sudo apt install nodejs npm
+  
+  # Windows (使用Chocolatey)
+  choco install nodejs
+  ```
+
+#### ❌ "npx: command not found"
+**问题**: NPX未正确安装
+**解决方案**:
+```bash
+# 重新安装NPM (NPX包含在NPM中)
+npm install -g npm@latest
+
+# 或单独安装NPX
+npm install -g npx
+```
+
+#### ❌ "EACCES: permission denied"
+**问题**: 权限不足
+**解决方案**:
+```bash
+# macOS/Linux: 修复NPM权限
+sudo chown -R $(whoami) ~/.npm
+sudo chown -R $(whoami) /usr/local/lib/node_modules
+
+# 或配置NPM使用不同目录
+npm config set prefix ~/.npm-global
+export PATH=~/.npm-global/bin:$PATH
+```
+
+#### ❌ 网络连接问题
+**问题**: 无法下载NPM包
+**解决方案**:
+```bash
+# 检查NPM Registry连接
+npm config get registry
+
+# 切换到国内镜像（如果在中国）
+npm config set registry https://registry.npmmirror.com
+
+# 测试网络连接
+curl -I https://registry.npmjs.org
+```
+
+### 🌍 不同平台的详细配置
+
+#### 🍎 macOS 配置指南
+
+**第一步：安装依赖**
+```bash
+# 安装Node.js (推荐使用Homebrew)
+brew install node
+
+# 验证安装
+node --version && npm --version
+```
+
+**第二步：配置Cursor**
+```bash
+# 创建配置目录
+mkdir -p ~/.config/Cursor/User
+
+# 编辑配置文件
+code ~/.config/Cursor/User/settings.json
+# 或使用任意文本编辑器
+```
+
+**第三步：添加MCP配置**
+在 `settings.json` 中添加：
+```json
+{
+  "mcpServers": {
+    "yapi-mcp-pro": {
+      "command": "npx",
+      "args": ["-y", "yapi-mcp-pro"],
+      "env": {
+        "YAPI_BASE_URL": "http://your-yapi-server.com",
+        "YAPI_TOKEN": "您的完整Cookie字符串",
+        "NODE_ENV": "cli"
+      }
+    }
+  }
+}
+```
+
+#### 🪟 Windows 配置指南
+
+**第一步：安装依赖**
+```powershell
+# 使用官方安装器
+# 访问 https://nodejs.org/ 下载Windows安装包
+
+# 或使用Chocolatey
+choco install nodejs
+
+# 验证安装
+node --version; npm --version
+```
+
+**第二步：配置Cursor**
+```powershell
+# 打开配置目录
+explorer %APPDATA%\Cursor\User\
+
+# 编辑settings.json文件
+# 如果文件不存在，创建它
+```
+
+**第三步：添加MCP配置**
+创建或编辑 `%APPDATA%\Cursor\User\settings.json`：
+```json
+{
+  "mcpServers": {
+    "yapi-mcp-pro": {
+      "command": "npx",
+      "args": ["-y", "yapi-mcp-pro"],
+      "env": {
+        "YAPI_BASE_URL": "http://your-yapi-server.com",
+        "YAPI_TOKEN": "您的完整Cookie字符串",
+        "NODE_ENV": "cli"
+      }
+    }
+  }
+}
+```
+
+#### 🐧 Linux 配置指南
+
+**第一步：安装依赖**
+```bash
+# Ubuntu/Debian
+sudo apt update
+sudo apt install nodejs npm
+
+# CentOS/RHEL/Fedora
+sudo dnf install nodejs npm  # Fedora
+sudo yum install nodejs npm  # CentOS/RHEL
+
+# Arch Linux
+sudo pacman -S nodejs npm
+
+# 验证安装
+node --version && npm --version
+```
+
+**第二步：配置Cursor**
+```bash
+# 创建配置目录
+mkdir -p ~/.config/Cursor/User
+
+# 编辑配置文件
+nano ~/.config/Cursor/User/settings.json
+# 或使用您喜欢的编辑器
+```
+
+**第三步：添加MCP配置**
+```json
+{
+  "mcpServers": {
+    "yapi-mcp-pro": {
+      "command": "npx",
+      "args": ["-y", "yapi-mcp-pro"],
+      "env": {
+        "YAPI_BASE_URL": "http://your-yapi-server.com",
+        "YAPI_TOKEN": "您的完整Cookie字符串",
+        "NODE_ENV": "cli"
+      }
+    }
+  }
+}
+```
+
+### 🧪 配置验证
+
+**完成配置后，使用以下步骤验证**：
+
+1. **测试MCP服务器可执行性**：
+```bash
+# 在任意目录运行
+npx -y yapi-mcp-pro --help
+```
+
+2. **检查Cursor配置**：
+   - 重启Cursor
+   - 打开任意项目
+   - 在聊天中输入："请获取我的YApi用户信息"
+
+3. **验证连接状态**：
+   - 成功：返回用户信息
+   - 失败：检查错误信息并参考 [故障排除](#-故障排除) 章节
+
+### 📊 配置成功指标
+
+✅ **成功配置的标志**：
+- `npx -y yapi-mcp-pro --help` 能正常显示帮助信息
+- Cursor重启后在MCP连接状态中显示 `yapi-mcp-pro`
+- AI助手能正常响应YApi相关请求
+- 能成功获取用户信息和项目列表
 
 ---
 
